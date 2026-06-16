@@ -59,6 +59,7 @@
     <select id="rule">
       <option value="R1">総回収を人数で均等分配</option>
       <option value="R3" selected>投資も回収も合算→等分で清算</option>
+      <option value="R4">稼働時間で振り分け（負け補填／勝ち分は時間比）</option>
     </select>
     <div class="rule-note" id="ruleNote"></div>
     <div class="rule-note" id="formula" style="margin-top:8px;font-size:12px;"></div>
@@ -80,6 +81,13 @@
   <section class="card">
     <div class="label">精算（誰が誰にいくら払う）</div>
     <div id="settle"></div>
+  </section>
+
+  <!-- 景品引き出し案内 -->
+  <section class="card">
+    <div class="label">各メンバーの景品引き出し</div>
+    <div class="rule-note" id="prizeInfo"></div>
+    <div id="prizeWithdraw"></div>
   </section>
 </div>
 
