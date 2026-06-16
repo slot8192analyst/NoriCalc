@@ -37,6 +37,18 @@ header p{margin:4px 0 0;color:var(--muted);font-size:14px;}
 .label{font-weight:600;margin-bottom:10px;}
 .row{display:flex;gap:10px;}
 
+/* メンバー見出し＋追加を1行に */
+.label-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.label-row .label{margin-bottom:0;}
+.member-add{flex:1;max-width:340px;min-width:220px;}
+
 /* ===== フォーム共通 ===== */
 input,select{
   background:var(--card2);
@@ -76,29 +88,6 @@ button.btn:hover{background:var(--accent-hover);}
   white-space:nowrap;
 }
 
-/* ===== メンバータグ ===== */
-.members-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
-.tag{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  background:var(--card2);
-  border:1px solid var(--border);
-  padding:6px 12px;
-  border-radius:999px;
-  font-size:14px;
-}
-.tag button{
-  background:none;
-  border:none;
-  color:var(--accent);
-  cursor:pointer;
-  font-size:16px;
-  line-height:1;
-  padding:0;
-}
-.tag button:hover{color:var(--accent-hover);}
-
 /* ===== 交換率トグル ===== */
 .toggle-row{display:flex;align-items:center;gap:12px;}
 .mode-label{font-size:14px;color:var(--muted);}
@@ -137,6 +126,7 @@ button.btn:hover{background:var(--accent-hover);}
   padding:16px;
   margin-bottom:12px;
 }
+.member-card:last-child{margin-bottom:0;}
 .member-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
 .member-name{font-size:17px;font-weight:600;}
 .member-pl{font-size:13px;color:var(--muted);}
@@ -157,6 +147,8 @@ button.btn:hover{background:var(--accent-hover);}
 .time-sep{color:var(--muted);font-size:14px;}
 .time-result{margin-top:8px;font-size:12px;color:var(--muted);}
 .time-result b{color:var(--text);}
+
+.empty-members{color:var(--muted);font-size:14px;padding:6px 2px;}
 
 /* ===== ルール・結果 ===== */
 .rule-note{font-size:13px;color:var(--muted);margin-top:10px;}
@@ -215,4 +207,5 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 /* ===== レスポンシブ ===== */
 @media(max-width:520px){
   .io-grid{grid-template-columns:1fr;}
+  .member-add{max-width:none;}
 }

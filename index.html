@@ -13,16 +13,6 @@
     <p>投資/回収を入れて、ルールを選ぶだけ</p>
   </header>
 
-  <!-- メンバー -->
-  <section class="card">
-    <div class="label">メンバー</div>
-    <div class="members-tags" id="memberTags"></div>
-    <div class="row">
-      <input id="newName" placeholder="名前/ニックネーム">
-      <button class="btn" id="addBtn">+追加</button>
-    </div>
-  </section>
-
   <!-- 交換率設定 -->
   <section class="card">
     <div class="label">交換率</div>
@@ -50,8 +40,17 @@
     <div class="rule-note" id="rateNote"></div>
   </section>
 
-  <!-- メンバーカード -->
-  <section id="memberCards"></section>
+  <!-- メンバー（一覧＋入力を統合） -->
+  <section class="card">
+    <div class="label-row">
+      <div class="label">メンバー</div>
+      <div class="row member-add">
+        <input id="newName" placeholder="名前/ニックネーム">
+        <button class="btn" id="addBtn">+追加</button>
+      </div>
+    </div>
+    <div id="memberCards"></div>
+  </section>
 
   <!-- ルール -->
   <section class="card">

@@ -17,6 +17,11 @@ const yen = n => Math.round(n).toLocaleString("ja-JP") + "円";
 const signClass = n => n > 0 ? "plus" : (n < 0 ? "minus" : "");
 const signYen = n => (n > 0 ? "+" : "") + yen(n);
 
+// 数値を千区切り文字列に（0や空なら空文字＝placeholderで「0」を見せる）
+function groupNum(n){
+  return (n && n > 0) ? Number(n).toLocaleString("ja-JP") : "";
+}
+
 // 現在時刻を "HH:MM" で返す
 function nowHHMM(){
   const d = new Date();
@@ -66,27 +71,20 @@ function prizeChips(p){
 // ===== 描画 =====
 function render(){
   renderRateUI();
-  renderTags();
   renderCards();
   renderRuleNote();
   calc();
 }
 
-function renderTags(){
-  const box = document.getElementById("memberTags");
-  box.innerHTML = "";
-  members.forEach((m, i) => {
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.innerHTML = `<span>${escapeHtml(m.name)}</span><button title="削除">×</button>`;
-    tag.querySelector("button").onclick = () => { members.splice(i,1); render(); };
-    box.appendChild(tag);
-  });
-}
-
 function renderCards(){
   const box = document.getElementById("memberCards");
   box.innerHTML = "";
+
+  if(members.length === 0){
+    box.innerHTML = `<div class="empty-members">右上の「+追加」でメンバーを登録してください</div>`;
+    return;
+  }
+
   members.forEach((m, i) => {
     const pl = retOf(m) - investOf(m);
     const hrs = hoursOf(m);
@@ -103,15 +101,15 @@ function renderCards(){
       <div class="io-grid">
         <div class="io-box">
           <div class="t">投資（円）</div>
-          <div class="f"><input inputmode="numeric" data-k="investYen" value="${m.investYen||0}">円</div>
+          <div class="f"><input inputmode="numeric" data-k="investYen" placeholder="0" value="${groupNum(m.investYen)}">円</div>
         </div>
         <div class="io-box">
           <div class="t">投資（枚）</div>
-          <div class="f"><input inputmode="numeric" data-k="investMai" value="${m.investMai||0}">枚</div>
+          <div class="f"><input inputmode="numeric" data-k="investMai" placeholder="0" value="${groupNum(m.investMai)}">枚</div>
         </div>
         <div class="io-box">
           <div class="t">回収（枚）</div>
-          <div class="f"><input inputmode="numeric" data-k="retMai" value="${m.retMai||0}">枚</div>
+          <div class="f"><input inputmode="numeric" data-k="retMai" placeholder="0" value="${groupNum(m.retMai)}">枚</div>
         </div>
         <div class="io-box time-box">
           <div class="t">稼働時間（開始 → 終了）</div>
@@ -123,23 +121,41 @@ function renderCards(){
           <div class="time-result">稼働：<b class="js-hours">${hrs.toFixed(2)}</b> 時間</div>
         </div>
       </div>`;
+
     card.querySelector(".x-btn").onclick = () => { members.splice(i,1); render(); };
+
     card.querySelectorAll("input").forEach(inp => {
-      inp.oninput = () => {
-        const k = inp.dataset.k;
-        if(k === "start" || k === "end"){
+      const k = inp.dataset.k;
+
+      if(k === "start" || k === "end"){
+        // 時刻入力
+        inp.oninput = () => {
           members[i][k] = inp.value;
           card.querySelector(".js-hours").textContent = hoursOf(members[i]).toFixed(2);
-        }else{
-          members[i][k] = parseInt(inp.value.replace(/[^0-9]/g,""),10) || 0;
+          calc();
+        };
+      } else {
+        // 数値入力：入力中はvalueを書き換えない（カーソル/0問題を回避）
+        inp.oninput = () => {
+          const v = parseInt(inp.value.replace(/[^0-9]/g,""),10) || 0;
+          members[i][k] = v;
           const npl = retOf(members[i]) - investOf(members[i]);
           const plEl = card.querySelector(".member-pl b");
           plEl.textContent = signYen(npl);
           plEl.className = signClass(npl);
-        }
-        calc();
-      };
+          calc();
+        };
+        // フォーカスを外したら千区切り表示に整える
+        inp.onblur = () => {
+          inp.value = groupNum(members[i][k]);
+        };
+        // フォーカス時はカンマを外して編集しやすく
+        inp.onfocus = () => {
+          inp.value = members[i][k] ? String(members[i][k]) : "";
+        };
+      }
     });
+
     box.appendChild(card);
   });
 }
