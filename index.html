@@ -23,13 +23,31 @@
     </div>
   </section>
 
-  <!-- 単価設定 -->
+  <!-- 交換率設定 -->
   <section class="card">
-    <div class="label">枚単価（円/枚）</div>
-    <div class="row">
-      <input id="rate" inputmode="numeric" value="20">
+    <div class="label">交換率</div>
+    <div class="toggle-row">
+      <span id="modeLabelYen" class="mode-label active">円単価</span>
+      <label class="switch">
+        <input type="checkbox" id="rateMode">
+        <span class="slider"></span>
+      </label>
+      <span id="modeLabelMai" class="mode-label">○枚交換</span>
     </div>
-    <div class="rule-note">投資の「枚」と回収の「枚」をこの単価で円換算して計算します。</div>
+
+    <!-- 円単価スタイル -->
+    <div id="rateYenWrap" class="row" style="margin-top:12px;">
+      <input id="rate" inputmode="decimal" value="19.61">
+      <span class="unit-suffix">円/枚</span>
+    </div>
+
+    <!-- ○枚交換スタイル -->
+    <div id="rateMaiWrap" class="row" style="margin-top:12px;display:none;">
+      <input id="rateExch" inputmode="numeric" value="51">
+      <span class="unit-suffix">枚交換（1000円あたり）</span>
+    </div>
+
+    <div class="rule-note" id="rateNote"></div>
   </section>
 
   <!-- メンバーカード -->

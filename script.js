@@ -1,4 +1,5 @@
 // ===== 状態 =====
+// investYen: 投資の円ぶん / investMai: 投資の枚ぶん / retMai: 回収の枚ぶん
 let members = [
   { name: "A", investYen: 0, investMai: 0, retMai: 0 },
   { name: "B", investYen: 0, investMai: 0, retMai: 0 },
@@ -11,12 +12,13 @@ const yen = n => Math.round(n).toLocaleString("ja-JP") + "円";
 const signClass = n => n > 0 ? "plus" : (n < 0 ? "minus" : "");
 const signYen = n => (n > 0 ? "+" : "") + yen(n);
 
+// 各メンバーの円換算（投資・回収）
 function investOf(m){ return (m.investYen||0) + (m.investMai||0) * rate; }
 function retOf(m){ return (m.retMai||0) * rate; }
 
-
 // ===== 描画 =====
 function render(){
+  renderRateUI();
   renderTags();
   renderCards();
   renderRuleNote();
@@ -50,7 +52,7 @@ function renderCards(){
           <button class="x-btn" title="削除">×</button>
         </div>
       </div>
-      <div class="io-grid invest">
+      <div class="io-grid">
         <div class="io-box">
           <div class="t">投資（円）</div>
           <div class="f"><input inputmode="numeric" data-k="investYen" value="${m.investYen||0}">円</div>
@@ -59,8 +61,6 @@ function renderCards(){
           <div class="t">投資（枚）</div>
           <div class="f"><input inputmode="numeric" data-k="investMai" value="${m.investMai||0}">枚</div>
         </div>
-      </div>
-      <div class="io-grid" style="margin-top:10px;">
         <div class="io-box io-full">
           <div class="t">回収（枚）</div>
           <div class="f"><input inputmode="numeric" data-k="retMai" value="${m.retMai||0}">枚</div>
@@ -80,6 +80,27 @@ function renderCards(){
     });
     box.appendChild(card);
   });
+}
+
+function renderRateUI(){
+  const yenWrap = document.getElementById("rateYenWrap");
+  const maiWrap = document.getElementById("rateMaiWrap");
+  const note = document.getElementById("rateNote");
+  const lblYen = document.getElementById("modeLabelYen");
+  const lblMai = document.getElementById("modeLabelMai");
+
+  if(rateMode === "yen"){
+    yenWrap.style.display = "flex";
+    maiWrap.style.display = "none";
+    lblYen.classList.add("active");
+    lblMai.classList.remove("active");
+  }else{
+    yenWrap.style.display = "none";
+    maiWrap.style.display = "flex";
+    lblYen.classList.remove("active");
+    lblMai.classList.add("active");
+  }
+  note.textContent = `現在の単価：${rate.toFixed(2)}円/枚 で円換算して計算します。`;
 }
 
 function renderRuleNote(){
@@ -175,13 +196,41 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// 単価変更時はカードの損益表示も依存するため両方を再描画
+function calcAndCards(){
+  renderCards();
+  calc();
+}
+
 // ===== イベント =====
 document.getElementById("addBtn").onclick = addMember;
 document.getElementById("newName").addEventListener("keydown", e => { if(e.key==="Enter") addMember(); });
 document.getElementById("rule").onchange = render;
+
+// 円単価スタイルの入力
 document.getElementById("rate").oninput = (e) => {
-  rate = parseInt(e.target.value.replace(/[^0-9]/g,""),10) || 0;
-  render();
+  rate = parseFloat(e.target.value.replace(/[^0-9.]/g,"")) || 0;
+  if(rate > 0){
+    document.getElementById("rateExch").value = Math.round(EXCH_BASE / rate);
+  }
+  document.getElementById("rateNote").textContent = `現在の単価：${rate.toFixed(2)}円/枚 で円換算して計算します。`;
+  calcAndCards();
+};
+
+// ○枚交換スタイルの入力
+document.getElementById("rateExch").oninput = (e) => {
+  const exch = parseInt(e.target.value.replace(/[^0-9]/g,""),10) || 0;
+  rate = exch > 0 ? EXCH_BASE / exch : 0;
+  document.getElementById("rate").value = rate.toFixed(2);
+  document.getElementById("rateNote").textContent =
+    `${exch}枚交換 → 単価：${rate.toFixed(2)}円/枚（${EXCH_BASE}円あたり）で計算します。`;
+  calcAndCards();
+};
+
+// トグル切り替え
+document.getElementById("rateMode").onchange = (e) => {
+  rateMode = e.target.checked ? "mai" : "yen";
+  renderRateUI();
 };
 
 function addMember(){
