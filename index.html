@@ -17,22 +17,22 @@
   <section class="card">
     <div class="label">交換率</div>
     <div class="toggle-row">
-      <span id="modeLabelYen" class="mode-label active">円単価</span>
+      <span id="modeLabelYen" class="mode-label">円単価</span>
       <label class="switch">
-        <input type="checkbox" id="rateMode">
+        <input type="checkbox" id="rateMode" checked>
         <span class="slider"></span>
       </label>
-      <span id="modeLabelMai" class="mode-label">○枚交換</span>
+      <span id="modeLabelMai" class="mode-label active">○枚交換</span>
     </div>
 
     <!-- 円単価スタイル -->
-    <div id="rateYenWrap" class="row" style="margin-top:12px;">
+    <div id="rateYenWrap" class="row" style="margin-top:12px;display:none;">
       <input id="rate" inputmode="decimal" value="19.61">
       <span class="unit-suffix">円/枚</span>
     </div>
 
     <!-- ○枚交換スタイル -->
-    <div id="rateMaiWrap" class="row" style="margin-top:12px;display:none;">
+    <div id="rateMaiWrap" class="row" style="margin-top:12px;">
       <input id="rateExch" inputmode="numeric" value="51">
       <span class="unit-suffix">枚交換（1000円あたり）</span>
     </div>

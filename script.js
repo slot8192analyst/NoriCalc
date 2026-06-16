@@ -1,55 +1,52 @@
 // ===== 状態 =====
-// investYen: 投資の円ぶん / investMai: 投資の枚ぶん / retMai: 回収の枚ぶん
-// start: 開始時刻 "HH:MM" / end: 終了時刻 "HH:MM"
 let members = [
   { name: "A", investYen: 0, investMai: 0, retMai: 0, start: "", end: "" },
   { name: "B", investYen: 0, investMai: 0, retMai: 0, start: "", end: "" },
 ];
-let rate = 19.61;        // 円/枚（実際の計算に使う単価）
-let rateMode = "yen";    // "yen" = 円単価入力 / "mai" = ○枚交換入力
-const EXCH_BASE = 1000;  // ○枚交換の基準金額（円）
+let rate = 19.61;
+let rateMode = "mai";
+const EXCH_BASE = 1000;
 
-// 景品の額面（店舗固定値）
-const PRIZE_BIG = 5000;  // 大景品 1個
-const PRIZE_MID = 1000;  // 中景品 1個
+const PRIZE_BIG = 5000;
+const PRIZE_MID = 1000;
 
 const yen = n => Math.round(n).toLocaleString("ja-JP") + "円";
 const signClass = n => n > 0 ? "plus" : (n < 0 ? "minus" : "");
 const signYen = n => (n > 0 ? "+" : "") + yen(n);
 
-// 数値を千区切り文字列に（0や空なら空文字＝placeholderで「0」を見せる）
+function settleLabel(n){
+  if(n > 0.5) return "受取";
+  if(n < -0.5) return "支払";
+  return "ちょうど";
+}
+
 function groupNum(n){
   return (n && n > 0) ? Number(n).toLocaleString("ja-JP") : "";
 }
 
-// 現在時刻を "HH:MM" で返す
 function nowHHMM(){
   const d = new Date();
   return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
 }
 
-// "HH:MM" を分に変換（無効なら null）
 function toMinutes(t){
   if(!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
   const [h,m] = t.split(":").map(Number);
   return h*60 + m;
 }
 
-// 開始・終了から稼働時間（時間・小数）を算出。日をまたぐ場合は+24h扱い。
 function hoursOf(m){
   const s = toMinutes(m.start);
   const e = toMinutes(m.end);
   if(s === null || e === null) return 0;
   let diff = e - s;
-  if(diff < 0) diff += 24*60; // 日付またぎ
+  if(diff < 0) diff += 24*60;
   return diff / 60;
 }
 
-// 各メンバーの円換算（投資・回収）
 function investOf(m){ return (m.investYen||0) + (m.investMai||0) * rate; }
 function retOf(m){ return (m.retMai||0) * rate; }
 
-// 金額を景品個数に分解（大→中の順。残りは端数）
 function toPrizes(amount){
   let rest = Math.round(amount);
   let big = 0, mid = 0;
@@ -58,14 +55,32 @@ function toPrizes(amount){
   return { big, mid, zandaka: rest };
 }
 
-// 景品個数をチップHTMLに
+// 景品個数をチップHTMLに（アイコン＋名前 ×個数）
 function prizeChips(p){
   const chips = [];
-  if(p.big > 0) chips.push(`<span class="prize-chip">大景品 ${p.big}個</span>`);
-  if(p.mid > 0) chips.push(`<span class="prize-chip">中景品 ${p.mid}個</span>`);
-  if(p.zandaka > 0) chips.push(`<span class="prize-chip zandaka">端数 ${yen(p.zandaka)}</span>`);
-  if(chips.length === 0) chips.push(`<span class="prize-chip">—</span>`);
+  if(p.big > 0){
+    chips.push(
+      `<span class="prize-chip"><span class="p-ico big"></span>` +
+      `<span class="p-name">大景品</span><span class="p-mul">×</span><span class="p-cnt">${p.big}</span></span>`
+    );
+  }
+  if(p.mid > 0){
+    chips.push(
+      `<span class="prize-chip"><span class="p-ico mid"></span>` +
+      `<span class="p-name">中景品</span><span class="p-mul">×</span><span class="p-cnt">${p.mid}</span></span>`
+    );
+  }
+  if(p.zandaka > 0){
+    chips.push(`<span class="prize-chip zandaka">端数 ${yen(p.zandaka)}</span>`);
+  }
+  if(chips.length === 0){
+    chips.push(`<span class="prize-chip none">—</span>`);
+  }
   return chips.join("");
+}
+
+function ruleUsesHours(){
+  return document.getElementById("rule").value === "R4";
 }
 
 // ===== 描画 =====
@@ -84,6 +99,8 @@ function renderCards(){
     box.innerHTML = `<div class="empty-members">右上の「+追加」でメンバーを登録してください</div>`;
     return;
   }
+
+  const showHours = ruleUsesHours();
 
   members.forEach((m, i) => {
     const pl = retOf(m) - investOf(m);
@@ -111,7 +128,7 @@ function renderCards(){
           <div class="t">回収（枚）</div>
           <div class="f"><input inputmode="numeric" data-k="retMai" placeholder="0" value="${groupNum(m.retMai)}">枚</div>
         </div>
-        <div class="io-box time-box">
+        <div class="io-box time-box${showHours ? "" : " is-hidden"}">
           <div class="t">稼働時間（開始 → 終了）</div>
           <div class="time-fields">
             <input type="time" data-k="start" value="${m.start||""}">
@@ -128,14 +145,12 @@ function renderCards(){
       const k = inp.dataset.k;
 
       if(k === "start" || k === "end"){
-        // 時刻入力
         inp.oninput = () => {
           members[i][k] = inp.value;
           card.querySelector(".js-hours").textContent = hoursOf(members[i]).toFixed(2);
           calc();
         };
       } else {
-        // 数値入力：入力中はvalueを書き換えない（カーソル/0問題を回避）
         inp.oninput = () => {
           const v = parseInt(inp.value.replace(/[^0-9]/g,""),10) || 0;
           members[i][k] = v;
@@ -145,11 +160,9 @@ function renderCards(){
           plEl.className = signClass(npl);
           calc();
         };
-        // フォーカスを外したら千区切り表示に整える
         inp.onblur = () => {
           inp.value = groupNum(members[i][k]);
         };
-        // フォーカス時はカンマを外して編集しやすく
         inp.onfocus = () => {
           inp.value = members[i][k] ? String(members[i][k]) : "";
         };
@@ -202,8 +215,10 @@ function calc(){
   const totalPL     = totalRet - totalInvest;
   const totalHours  = members.reduce((s,m)=>s+hoursOf(m),0);
 
-  document.getElementById("summary").innerHTML =
-    `総投資：<b>${yen(totalInvest)}</b><br>総回収：<b>${yen(totalRet)}</b><br>総損益：<b class="${signClass(totalPL)}">${signYen(totalPL)}</b>`;
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-main">総損益</div>
+    <div class="summary-pl ${signClass(totalPL)}">${signYen(totalPL)}</div>
+    <div class="summary-sub">総投資 <b>${yen(totalInvest)}</b> ／ 総回収 <b>${yen(totalRet)}</b></div>`;
 
   const formula = document.getElementById("formula");
   const body = document.getElementById("resultBody");
@@ -252,10 +267,10 @@ function calc(){
   rows.forEach(r => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${escapeHtml(r.name)}</td>
-      <td class="${signClass(r.personalPL)}">${signYen(r.personalPL)}</td>
-      <td class="${signClass(r.share)}">${signYen(r.share)}</td>
-      <td class="${signClass(r.settle)}">${signYen(r.settle)}</td>`;
+      <td data-label="メンバー">${escapeHtml(r.name)}</td>
+      <td data-label="個人損益" class="${signClass(r.personalPL)}">${signYen(r.personalPL)}</td>
+      <td data-label="清算後の取り分" class="${signClass(r.share)}">${signYen(r.share)}</td>
+      <td data-label="精算" class="${signClass(r.settle)}">${signYen(r.settle)}<span class="settle-tag">（${settleLabel(r.settle)}）</span></td>`;
     body.appendChild(tr);
   });
 
@@ -264,7 +279,6 @@ function calc(){
   renderWithdraw(rows, transfers);
 }
 
-// ===== 送金リストを作る（最小回数マッチング）=====
 function buildTransfers(rows){
   let creditors = rows.filter(r=>r.settle > 0.5).map(r=>({name:r.name, amt:r.settle}));
   let debtors   = rows.filter(r=>r.settle < -0.5).map(r=>({name:r.name, amt:-r.settle}));
@@ -284,7 +298,6 @@ function buildTransfers(rows){
   return transfers;
 }
 
-// ===== 精算指示の表示 =====
 function renderSettlement(transfers){
   const box = document.getElementById("settle");
   if(transfers.length === 0){
@@ -298,13 +311,11 @@ function renderSettlement(transfers){
     </div>`).join("");
 }
 
-// ===== 各メンバーの景品引き出し案内 =====
 function renderWithdraw(rows, transfers){
   const box = document.getElementById("prizeWithdraw");
   document.getElementById("prizeInfo").textContent =
     `精算で他の人へ渡す金額を、各メンバーがまとめて引き出す個数です（大景品 ${yen(PRIZE_BIG)} / 中景品 ${yen(PRIZE_MID)}）。`;
 
-  // 各メンバーが「払う側」として渡す合計と相手をまとめる
   const map = {};
   rows.forEach(r => { map[r.name] = { total:0, to:[] }; });
   transfers.forEach(t => {
@@ -337,7 +348,6 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// 単価変更時はカードの損益表示も依存するため両方を再描画
 function calcAndCards(){
   renderCards();
   calc();
@@ -348,7 +358,6 @@ document.getElementById("addBtn").onclick = addMember;
 document.getElementById("newName").addEventListener("keydown", e => { if(e.key==="Enter") addMember(); });
 document.getElementById("rule").onchange = render;
 
-// 円単価スタイルの入力
 document.getElementById("rate").oninput = (e) => {
   rate = parseFloat(e.target.value.replace(/[^0-9.]/g,"")) || 0;
   if(rate > 0){
@@ -358,7 +367,6 @@ document.getElementById("rate").oninput = (e) => {
   calcAndCards();
 };
 
-// ○枚交換スタイルの入力
 document.getElementById("rateExch").oninput = (e) => {
   const exch = parseInt(e.target.value.replace(/[^0-9]/g,""),10) || 0;
   rate = exch > 0 ? EXCH_BASE / exch : 0;
@@ -368,13 +376,11 @@ document.getElementById("rateExch").oninput = (e) => {
   calcAndCards();
 };
 
-// トグル切り替え
 document.getElementById("rateMode").onchange = (e) => {
   rateMode = e.target.checked ? "mai" : "yen";
   renderRateUI();
 };
 
-// 新規メンバー追加（終了時刻は現在時刻をデフォルトに）
 function addMember(){
   const inp = document.getElementById("newName");
   const name = inp.value.trim() || String.fromCharCode(65 + members.length);
@@ -383,7 +389,9 @@ function addMember(){
   render();
 }
 
-// 初期メンバーの終了時刻に現在時刻をセット
 members.forEach(m => { if(!m.end) m.end = nowHHMM(); });
+
+rate = EXCH_BASE / 51;
+document.getElementById("rate").value = rate.toFixed(2);
 
 render();

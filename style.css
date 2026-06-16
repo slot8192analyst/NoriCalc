@@ -9,6 +9,8 @@
   --accent-hover:#f06d80;
   --plus:#4ade80;
   --minus:#f87171;
+  --gold:#e3b341;
+  --silver:#c4c9d4;
   --radius:18px;
 }
 
@@ -62,10 +64,10 @@ input,select{
 }
 input:focus,select:focus{border-color:var(--accent);}
 
-/* time 入力のダークテーマ調整（iOS/Safariのピッカー文字色など） */
+/* time 入力のダークテーマ調整 */
 input[type="time"]{
   color-scheme:dark;
-  min-height:44px;
+  min-height:40px;
 }
 
 button.btn{
@@ -140,20 +142,31 @@ button.btn:hover{background:var(--accent-hover);}
 .io-box .t{font-size:12px;color:var(--muted);margin-bottom:6px;}
 .io-box .f{display:flex;align-items:center;gap:6px;}
 
-/* 稼働時間（開始・終了） */
-.time-box{grid-column:1/-1;}
-.time-fields{display:flex;align-items:center;gap:8px;}
-.time-fields input{flex:1;}
-.time-sep{color:var(--muted);font-size:14px;}
-.time-result{margin-top:8px;font-size:12px;color:var(--muted);}
+/* 稼働時間（回収の隣のセルに収める・コンパクト化） */
+.time-box.is-hidden{display:none;}
+.time-fields{display:flex;align-items:center;gap:6px;}
+.time-fields input{flex:1;min-width:0;padding:9px 8px;font-size:13px;}
+.time-sep{color:var(--muted);font-size:13px;}
+.time-result{margin-top:6px;font-size:11px;color:var(--muted);}
 .time-result b{color:var(--text);}
 
 .empty-members{color:var(--muted);font-size:14px;padding:6px 2px;}
 
 /* ===== ルール・結果 ===== */
 .rule-note{font-size:13px;color:var(--muted);margin-top:10px;}
-.summary{text-align:right;font-size:14px;color:var(--muted);}
-.summary b{color:var(--text);}
+
+/* ===== サマリー（総損益を主役に） ===== */
+.summary{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+  margin-bottom:6px;
+}
+.summary-main{font-size:13px;color:var(--muted);}
+.summary-pl{font-size:30px;font-weight:700;line-height:1.2;}
+.summary-sub{font-size:12px;color:var(--muted);}
+.summary-sub b{color:var(--text);font-weight:600;}
 
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;}
 th,td{padding:10px;border-bottom:1px solid var(--border);text-align:right;}
@@ -162,6 +175,8 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 
 .plus{color:var(--plus);}
 .minus{color:var(--minus);}
+
+.settle-tag{font-size:11px;color:var(--muted);margin-left:2px;}
 
 /* ===== 精算 ===== */
 .settle-line{
@@ -174,21 +189,44 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 }
 .settle-line b{color:var(--accent-hover);}
 
+/* ===== 景品チップ（アイコン＋ ×個数） ===== */
 .prize-detail{
   margin-top:6px;
   font-size:13px;
-  color:var(--muted);
+  color:var(--text);
   display:flex;
   flex-wrap:wrap;
   gap:6px;
 }
 .prize-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:999px;
-  padding:3px 10px;
+  padding:4px 11px;
 }
+.prize-chip .p-ico{
+  width:14px;
+  height:14px;
+  border-radius:3px;
+  flex-shrink:0;
+}
+/* 大景品＝金、中景品＝銀のグラデーション四角 */
+.prize-chip .p-ico.big{
+  background:linear-gradient(135deg,#f3d27a,var(--gold));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);
+}
+.prize-chip .p-ico.mid{
+  background:linear-gradient(135deg,#e8ecf4,var(--silver));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);
+}
+.prize-chip .p-name{color:var(--muted);}
+.prize-chip .p-mul{color:var(--muted);}
+.prize-chip .p-cnt{font-weight:700;}
 .prize-chip.zandaka{color:var(--minus);}
+.prize-chip.none{color:var(--muted);}
 
 /* ===== 景品引き出し ===== */
 .withdraw-line{
@@ -206,6 +244,49 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 
 /* ===== レスポンシブ ===== */
 @media(max-width:520px){
-  .io-grid{grid-template-columns:1fr;}
+  .io-grid{grid-template-columns:1fr 1fr;}
   .member-add{max-width:none;}
+  .summary-pl{font-size:26px;}
+
+  /* 結果テーブルをカード型に切り替え */
+  #resultTable thead{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);
+    white-space:nowrap;border:0;
+  }
+  #resultTable{margin-top:6px;}
+  #resultTable tr{
+    display:block;
+    background:var(--card2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:6px 14px;
+    margin-top:10px;
+  }
+  #resultTable td{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    text-align:right;
+    border-bottom:1px solid var(--border);
+    padding:9px 0;
+  }
+  #resultTable tr td:last-child{border-bottom:none;}
+  #resultTable td::before{
+    content:attr(data-label);
+    color:var(--muted);
+    font-size:12px;
+    text-align:left;
+    margin-right:12px;
+  }
+  #resultTable td:first-child{
+    font-size:16px;
+    font-weight:700;
+    border-bottom:1px solid var(--border);
+    padding-top:4px;
+  }
+  #resultTable td:first-child::before{content:"";margin:0;}
+  #resultTable td.empty::before{content:"";margin:0;}
 }
