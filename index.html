@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ノリ打ち清算ツール（ダーク）</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ノリ打ち清算</h1>
+    <p>投資/回収を入れて、ルールを選ぶだけ</p>
+  </header>
+
+  <!-- メンバー -->
+  <section class="card">
+    <div class="label">メンバー</div>
+    <div class="members-tags" id="memberTags"></div>
+    <div class="row">
+      <input id="newName" placeholder="名前/ニックネーム">
+      <button class="btn" id="addBtn">+追加</button>
+    </div>
+  </section>
+
+  <!-- 単価設定 -->
+  <section class="card">
+    <div class="label">枚単価（円/枚）</div>
+    <div class="row">
+      <input id="rate" inputmode="numeric" value="20">
+    </div>
+    <div class="rule-note">投資の「枚」と回収の「枚」をこの単価で円換算して計算します。</div>
+  </section>
+
+  <!-- メンバーカード -->
+  <section id="memberCards"></section>
+
+  <!-- ルール -->
+  <section class="card">
+    <div class="label">ルール</div>
+    <select id="rule">
+      <option value="R1">総回収を人数で均等分配</option>
+      <option value="R3" selected>投資も回収も合算→等分で清算</option>
+    </select>
+    <div class="rule-note" id="ruleNote"></div>
+    <div class="rule-note" id="formula" style="margin-top:8px;font-size:12px;"></div>
+  </section>
+
+  <!-- 結果 -->
+  <section class="card">
+    <div class="label">結果</div>
+    <div class="summary" id="summary"></div>
+    <table id="resultTable">
+      <thead>
+        <tr><th>メンバー</th><th>個人損益</th><th>清算後の取り分</th><th>精算（過不足）</th></tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </section>
+
+  <!-- 精算指示 -->
+  <section class="card">
+    <div class="label">精算（誰が誰にいくら払う）</div>
+    <div id="settle"></div>
+  </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
