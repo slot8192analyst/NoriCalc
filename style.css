@@ -290,3 +290,32 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   #resultTable td:first-child::before{content:"";margin:0;}
   #resultTable td.empty::before{content:"";margin:0;}
 }
+
+/* 時刻ドロップダウン（プルダウン化に伴う調整） */
+.time-fields select{
+  flex:1;
+  min-width:0;
+  background:var(--card2);
+  border:1px solid var(--border);
+  color:var(--text);
+  border-radius:10px;
+  padding:9px 6px;
+  font-size:13px;
+}
+
+/* 結果・精算・景品引き出しの縦幅を詰める（スクショ用にコンパクト化） */
+#resultTable th,
+#resultTable td{ padding:7px 10px; }
+
+.settle-line,
+.withdraw-line{ padding:9px 12px; margin-top:6px; }
+
+.withdraw-line .wnote{ margin-top:2px; }
+
+/* 支払う総額の見せ方 */
+.wpay{ font-size:13px; color:var(--muted); margin-top:3px; }
+.wpay b{ color:var(--text); font-size:15px; }
+
+/* 景品チップの余白も少し詰める */
+.prize-detail{ margin-top:4px; gap:5px; }
+.prize-chip{ padding:3px 9px; }
