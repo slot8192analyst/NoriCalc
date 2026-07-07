@@ -39,7 +39,7 @@ header p{margin:4px 0 0;color:var(--muted);font-size:14px;}
 .label{font-weight:600;margin-bottom:10px;}
 .row{display:flex;gap:10px;}
 
-/* メンバー見出し＋追加を1行に */
+/* セクション見出し行（ラベル＋コピーボタン等） */
 .label-row{
   display:flex;
   justify-content:space-between;
@@ -49,7 +49,8 @@ header p{margin:4px 0 0;color:var(--muted);font-size:14px;}
   margin-bottom:14px;
 }
 .label-row .label{margin-bottom:0;}
-.member-add{flex:1;max-width:340px;min-width:220px;}
+.head-actions{display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;}
+.member-add{flex:1;max-width:340px;min-width:200px;}
 
 /* ===== フォーム共通 ===== */
 input,select{
@@ -82,6 +83,107 @@ button.btn:hover{background:var(--accent-hover);}
   color:var(--muted);
   font-size:14px;
   white-space:nowrap;
+}
+
+/* ===== 画像コピーボタン ===== */
+.copy-btn{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  cursor:pointer;
+  min-width:40px;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:background .15s, border-color .15s;
+}
+.copy-btn:hover{border-color:var(--accent);background:#262626;}
+.copy-btn:active{transform:scale(.94);}
+.copy-btn.busy{opacity:.5;pointer-events:none;}
+/* コピーアイコン（重なる2枚の四角） */
+.copy-ico{position:relative;width:15px;height:15px;display:inline-block;}
+.copy-ico::before,.copy-ico::after{
+  content:"";position:absolute;
+  border:1.6px solid var(--text);
+  border-radius:3px;
+}
+.copy-ico::before{width:10px;height:11px;right:0;top:0;}
+.copy-ico::after{width:10px;height:11px;left:0;bottom:0;background:var(--card2);}
+
+/* ===== アコーディオン ===== */
+.accordion{padding:0;overflow:hidden;}
+.acc-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  cursor:pointer;
+  user-select:none;
+}
+.acc-title{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.acc-current{
+  font-size:13px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.acc-head-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+.quick-rate{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:6px 10px;
+}
+.quick-rate input{
+  width:64px;
+  border:none;
+  background:transparent;
+  padding:4px 0;
+  text-align:right;
+  font-size:15px;
+}
+.quick-rate input:focus{border:none;}
+.quick-rate .unit-suffix{font-size:13px;}
+
+.acc-toggle{
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:10px;
+  min-width:40px;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.chevron{
+  width:10px;height:10px;
+  border-right:2px solid var(--muted);
+  border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);
+  transition:transform .2s;
+  margin-top:-3px;
+}
+.accordion.open .chevron{transform:rotate(-135deg);margin-top:3px;}
+
+.acc-body{
+  max-height:0;
+  opacity:0;
+  padding:0 18px;
+  transition:max-height .25s ease, opacity .2s ease, padding .25s ease;
+}
+.accordion.open .acc-body{
+  max-height:500px;
+  opacity:1;
+  padding:0 18px 18px;
 }
 
 /* ===== 交換率トグル ===== */
@@ -127,16 +229,25 @@ button.btn:hover{background:var(--accent-hover);}
 .member-name{font-size:17px;font-weight:600;}
 .member-pl{font-size:13px;color:var(--muted);}
 .member-pl b{color:var(--text);}
-.x-btn{background:none;border:none;color:var(--accent);font-size:18px;cursor:pointer;}
+.x-btn{
+  background:none;border:none;color:var(--accent);
+  font-size:20px;cursor:pointer;
+  padding:6px 10px;line-height:1;
+}
 .x-btn:hover{color:var(--accent-hover);}
 
-.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.io-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;}
 .io-full{grid-column:1/-1;}
 .io-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;}
 .io-box .t{font-size:12px;color:var(--muted);margin-bottom:6px;}
 .io-box .f{display:flex;align-items:center;gap:6px;}
 
-/* 稼働時間セル：横幅いっぱいを使い、開始/終了を上下2段に */
+/* 投資＝赤・回収＝緑で見分けやすく（縦1列でも一目で区別） */
+.io-box.invest{border-left:3px solid var(--minus);}
+.io-box.invest .t{color:var(--minus);}
+.io-box.ret{border-left:3px solid var(--plus);}
+.io-box.ret .t{color:var(--plus);}
+
 .time-box{grid-column:1/-1;}
 .time-box.is-hidden{display:none;}
 .time-row{
@@ -156,6 +267,7 @@ button.btn:hover{background:var(--accent-hover);}
   flex:1;
   min-width:0;
   padding:10px 8px;
+  min-height:44px;
   font-size:15px;
   text-align:center;
 }
@@ -168,7 +280,6 @@ button.btn:hover{background:var(--accent-hover);}
 /* ===== ルール・結果 ===== */
 .rule-note{font-size:13px;color:var(--muted);margin-top:10px;}
 
-/* ===== サマリー（総損益を主役に） ===== */
 .summary{
   display:flex;
   flex-direction:column;
@@ -202,7 +313,7 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 }
 .settle-line b{color:var(--accent-hover);}
 
-/* ===== 按分の内訳（R5の計算過程） ===== */
+/* ===== 按分の内訳 ===== */
 .breakdown-line{
   background:var(--card2);
   border:1px solid var(--border);
@@ -225,7 +336,7 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 .breakdown-line .bstep b.plus{color:var(--plus);}
 .breakdown-line .bstep b.minus{color:var(--minus);}
 
-/* ===== 景品チップ（アイコン＋ ×個数） ===== */
+/* ===== 景品チップ ===== */
 .prize-detail{
   margin-top:4px;
   font-size:13px;
@@ -249,7 +360,6 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   border-radius:3px;
   flex-shrink:0;
 }
-/* 大景品＝金、中景品＝銀のグラデーション四角 */
 .prize-chip .p-ico.big{
   background:linear-gradient(135deg,#f3d27a,var(--gold));
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);
@@ -280,13 +390,38 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 
 .empty{color:var(--muted);font-size:14px;}
 
+/* ===== トースト ===== */
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:28px;
+  transform:translateX(-50%) translateY(20px);
+  background:#2a2a2a;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:10px 20px;
+  font-size:14px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s, transform .2s;
+  z-index:100;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
 /* ===== レスポンシブ ===== */
 @media(max-width:520px){
-  .io-grid{grid-template-columns:1fr 1fr;}
   .member-add{max-width:none;}
   .summary-pl{font-size:26px;}
 
-  /* 結果テーブルをカード型に切り替え */
+  /* iOS自動ズーム防止：入力系フォントを16pxに */
+  input, select, .quick-rate input{font-size:16px;}
+
+  .quick-rate input{width:54px;}
+  .acc-head{padding:14px 16px;}
+  .accordion.open .acc-body{padding:0 16px 16px;}
+
   #resultTable thead{
     position:absolute;
     width:1px;height:1px;
@@ -327,4 +462,8 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   }
   #resultTable td:first-child::before{content:"";margin:0;}
   #resultTable td.empty::before{content:"";margin:0;}
+}
+
+@media(max-width:480px){
+  body{padding:12px;}
 }

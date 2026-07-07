@@ -3,71 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ノリ打ち・勝ち額計算ツール</title>
+<title>ノリ打ち計算ツール</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>ノリ打ち・勝ち額計算ツール</h1>
-    <p>投資/回収を入れて、ルールを選ぶだけ</p>
+    <h1>ノリ打ち計算ツール</h1>
+    <p>投資/回収を入れて、配分ルールを選ぶだけ</p>
   </header>
 
-  <!-- 交換率設定 -->
-  <section class="card">
-    <div class="label">交換率</div>
-    <div class="toggle-row">
-      <span id="modeLabelYen" class="mode-label">円単価</span>
-      <label class="switch">
-        <input type="checkbox" id="rateMode" checked>
-        <span class="slider"></span>
-      </label>
-      <span id="modeLabelMai" class="mode-label active">○枚交換</span>
+  <!-- 交換率設定（アコーディオン） -->
+  <section class="card accordion" id="rateCard" data-copy-label="交換率">
+    <div class="acc-head" id="rateHead">
+      <div class="acc-title">
+        <span class="label" style="margin:0;">交換率</span>
+        <span class="acc-current" id="rateSummary">51枚交換 / 19.61円</span>
+      </div>
+      <div class="acc-head-right">
+        <div class="quick-rate" id="quickRate" onclick="event.stopPropagation();">
+          <input id="rateQuick" inputmode="numeric" enterkeyhint="done" value="51">
+          <span class="unit-suffix" id="quickSuffix">枚</span>
+        </div>
+        <button class="copy-btn" data-copy="#rateCard" title="画像でコピー" aria-label="画像でコピー" onclick="event.stopPropagation();">
+          <span class="copy-ico"></span>
+        </button>
+        <button class="acc-toggle" id="rateToggle" aria-expanded="false" aria-label="交換率の詳細">
+          <span class="chevron"></span>
+        </button>
+      </div>
     </div>
 
-    <!-- 円単価スタイル -->
-    <div id="rateYenWrap" class="row" style="margin-top:12px;display:none;">
-      <input id="rate" inputmode="decimal" value="19.61">
-      <span class="unit-suffix">円/枚</span>
-    </div>
+    <div class="acc-body" id="rateBody">
+      <div class="toggle-row">
+        <span id="modeLabelYen" class="mode-label">円単価</span>
+        <label class="switch">
+          <input type="checkbox" id="rateMode" checked>
+          <span class="slider"></span>
+        </label>
+        <span id="modeLabelMai" class="mode-label active">○枚交換</span>
+      </div>
 
-    <!-- ○枚交換スタイル -->
-    <div id="rateMaiWrap" class="row" style="margin-top:12px;">
-      <input id="rateExch" inputmode="numeric" value="51">
-      <span class="unit-suffix">枚交換（1000円あたり）</span>
-    </div>
+      <div id="rateYenWrap" class="row" style="margin-top:12px;display:none;">
+        <input id="rate" inputmode="decimal" enterkeyhint="done" value="19.61">
+        <span class="unit-suffix">円/枚</span>
+      </div>
 
-    <div class="rule-note" id="rateNote"></div>
+      <div id="rateMaiWrap" class="row" style="margin-top:12px;">
+        <input id="rateExch" inputmode="numeric" enterkeyhint="done" value="51">
+        <span class="unit-suffix">枚交換（1000円あたり）</span>
+      </div>
+
+      <div class="rule-note" id="rateNote"></div>
+    </div>
   </section>
 
-  <!-- メンバー（一覧＋入力を統合） -->
-  <section class="card">
+  <!-- ルール（アコーディオン） -->
+  <section class="card accordion" id="ruleCard" data-copy-label="ルール">
+    <div class="acc-head" id="ruleHead">
+      <div class="acc-title">
+        <span class="label" style="margin:0;">ルール</span>
+        <span class="acc-current" id="ruleSummary"></span>
+      </div>
+      <div class="acc-head-right">
+        <button class="copy-btn" data-copy="#ruleCard" title="画像でコピー" aria-label="画像でコピー" onclick="event.stopPropagation();">
+          <span class="copy-ico"></span>
+        </button>
+        <button class="acc-toggle" id="ruleToggle" aria-expanded="false" aria-label="ルールの詳細">
+          <span class="chevron"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="acc-body" id="ruleBody">
+      <select id="rule">
+        <option value="R1">総回収を人数で均等分配</option>
+        <option value="R3" selected>投資も回収も合算→等分で清算</option>
+        <option value="R4">稼働時間で振り分け（負け分は全額補填／勝ち分は時間比で分配）</option>
+        <option value="R5">稼働時間で完全振り分け（勝ち負けとも時間比で負担・分配）</option>
+      </select>
+      <div class="rule-note" id="ruleNote"></div>
+      <div class="rule-note" id="formula" style="margin-top:8px;font-size:12px;"></div>
+    </div>
+  </section>
+
+  <!-- メンバー -->
+  <section class="card" id="memberSection" data-copy-label="メンバー">
     <div class="label-row">
       <div class="label">メンバー</div>
-      <div class="row member-add">
-        <input id="newName" placeholder="名前/ニックネーム">
-        <button class="btn" id="addBtn">+追加</button>
+      <div class="head-actions">
+        <div class="row member-add">
+          <input id="newName" placeholder="例：田中" enterkeyhint="done">
+          <button class="btn" id="addBtn">+追加</button>
+        </div>
+        <button class="copy-btn" data-copy="#memberSection" title="画像でコピー" aria-label="画像でコピー">
+          <span class="copy-ico"></span>
+        </button>
       </div>
     </div>
     <div id="memberCards"></div>
   </section>
 
-  <!-- ルール -->
-  <section class="card">
-    <div class="label">ルール</div>
-    <select id="rule">
-      <option value="R1">総回収を人数で均等分配</option>
-      <option value="R3" selected>投資も回収も合算→等分で清算</option>
-      <option value="R4">稼働時間で振り分け（負け分は全額補填／勝ち分は時間比で分配）</option>
-      <option value="R5">稼働時間で完全按分（勝ち負けとも時間比で負担・分配）</option>
-    </select>
-    <div class="rule-note" id="ruleNote"></div>
-    <div class="rule-note" id="formula" style="margin-top:8px;font-size:12px;"></div>
-  </section>
-
   <!-- 結果 -->
-  <section class="card">
-    <div class="label">結果</div>
+  <section class="card" id="resultSection" data-copy-label="結果">
+    <div class="label-row">
+      <div class="label">結果</div>
+      <button class="copy-btn" data-copy="#resultSection" title="画像でコピー" aria-label="画像でコピー">
+        <span class="copy-ico"></span>
+      </button>
+    </div>
     <div class="summary" id="summary"></div>
     <table id="resultTable">
       <thead>
@@ -77,27 +121,47 @@
     </table>
   </section>
 
-  <!-- 按分の内訳（R5などの時間按分ルール時に表示） -->
-  <section class="card" id="breakdownCard" style="display:none;">
-    <div class="label">按分の内訳（計算のしかた）</div>
+  <!-- 振り分け内容 -->
+  <section class="card" id="breakdownCard" style="display:none;" data-copy-label="按分の内訳">
+    <div class="label-row">
+      <div class="label">振り分け内容</div>
+      <button class="copy-btn" data-copy="#breakdownCard" title="画像でコピー" aria-label="画像でコピー">
+        <span class="copy-ico"></span>
+      </button>
+    </div>
     <div class="rule-note" id="breakdownInfo"></div>
     <div id="breakdown"></div>
   </section>
 
   <!-- 精算指示 -->
-  <section class="card">
-    <div class="label">精算（誰が誰にいくら払う）</div>
+  <section class="card" id="settleSection" data-copy-label="精算">
+    <div class="label-row">
+      <div class="label">精算（誰が誰にいくら渡す）</div>
+      <button class="copy-btn" data-copy="#settleSection" title="画像でコピー" aria-label="画像でコピー">
+        <span class="copy-ico"></span>
+      </button>
+    </div>
     <div id="settle"></div>
   </section>
 
   <!-- 景品引き出し案内 -->
-  <section class="card">
-    <div class="label">各メンバーの景品引き出し</div>
+  <section class="card" id="prizeSection" data-copy-label="景品引き出し">
+    <div class="label-row">
+      <div class="label">各メンバーの景品引き出し</div>
+      <button class="copy-btn" data-copy="#prizeSection" title="画像でコピー" aria-label="画像でコピー">
+        <span class="copy-ico"></span>
+      </button>
+    </div>
     <div class="rule-note" id="prizeInfo"></div>
     <div id="prizeWithdraw"></div>
   </section>
 </div>
 
+<!-- トースト通知 -->
+<div id="toast" class="toast"></div>
+
+<!-- 画像化ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
