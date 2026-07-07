@@ -123,6 +123,34 @@ function ruleUsesHours(){
   return document.getElementById("rule").value === "R4";
 }
 
+// ===== 保存・復元 =====
+const STORAGE_KEY = "noriuchi_calc_v1";
+
+function saveState(){
+  try{
+    const data = {
+      members,
+      rate,
+      rateMode,
+      rule: document.getElementById("rule").value,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){ /* 保存失敗時は無視（プライベートモード等） */ }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(Array.isArray(data.members)) members = data.members;
+    if(typeof data.rate === "number") rate = data.rate;
+    if(data.rateMode === "yen" || data.rateMode === "mai") rateMode = data.rateMode;
+    if(data.rule) document.getElementById("rule").value = data.rule;
+    return true;
+  }catch(e){ return false; }
+}
+
 // ===== 描画 =====
 function render(){
   renderRateUI();
@@ -170,11 +198,14 @@ function renderCards(){
         </div>
         <div class="io-box time-box${showHours ? "" : " is-hidden"}">
           <div class="t">稼働時間（開始 → 終了）</div>
-          <div class="time-fields">
+          <div class="time-row">
+            <span class="time-label">開始</span>
             <select data-tk="start-h">${hourOptions(splitTime(m.start).h)}</select>
             <span class="time-sep">:</span>
             <select data-tk="start-m">${minuteOptions(splitTime(m.start).m)}</select>
-            <span class="time-sep">→</span>
+          </div>
+          <div class="time-row">
+            <span class="time-label">終了</span>
             <select data-tk="end-h">${hourOptions(splitTime(m.end).h)}</select>
             <span class="time-sep">:</span>
             <select data-tk="end-m">${minuteOptions(splitTime(m.end).m)}</select>
@@ -404,34 +435,6 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ===== 保存・復元 =====
-const STORAGE_KEY = "noriuchi_calc_v1";
-
-function saveState(){
-  try{
-    const data = {
-      members,
-      rate,
-      rateMode,
-      rule: document.getElementById("rule").value,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }catch(e){ /* 保存失敗時は無視（プライベートモード等） */ }
-}
-
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return false;
-    const data = JSON.parse(raw);
-    if(Array.isArray(data.members)) members = data.members;
-    if(typeof data.rate === "number") rate = data.rate;
-    if(data.rateMode === "yen" || data.rateMode === "mai") rateMode = data.rateMode;
-    if(data.rule) document.getElementById("rule").value = data.rule;
-    return true;
-  }catch(e){ return false; }
-}
-
 function calcAndCards(){
   renderCards();
   calc();
@@ -473,11 +476,10 @@ function addMember(){
   render();
 }
 
-// 保存データがあれば復元、なければデフォルト初期化
+// ===== 初期化 =====
 const restored = loadState();
 
 if(restored){
-  // 交換率の入力欄に復元値を反映
   document.getElementById("rate").value = rate.toFixed(2);
   if(rate > 0) document.getElementById("rateExch").value = Math.round(EXCH_BASE / rate);
 }else{
