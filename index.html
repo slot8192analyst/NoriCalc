@@ -59,6 +59,7 @@
       <option value="R1">総回収を人数で均等分配</option>
       <option value="R3" selected>投資も回収も合算→等分で清算</option>
       <option value="R4">稼働時間で振り分け（負け分は全額補填／勝ち分は時間比で分配）</option>
+      <option value="R5">稼働時間で完全按分（勝ち負けとも時間比で負担・分配）</option>
     </select>
     <div class="rule-note" id="ruleNote"></div>
     <div class="rule-note" id="formula" style="margin-top:8px;font-size:12px;"></div>
@@ -74,6 +75,13 @@
       </thead>
       <tbody id="resultBody"></tbody>
     </table>
+  </section>
+
+  <!-- 按分の内訳（R5などの時間按分ルール時に表示） -->
+  <section class="card" id="breakdownCard" style="display:none;">
+    <div class="label">按分の内訳（計算のしかた）</div>
+    <div class="rule-note" id="breakdownInfo"></div>
+    <div id="breakdown"></div>
   </section>
 
   <!-- 精算指示 -->

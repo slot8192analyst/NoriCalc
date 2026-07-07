@@ -120,7 +120,8 @@ function prizeChips(p){
 }
 
 function ruleUsesHours(){
-  return document.getElementById("rule").value === "R4";
+  const v = document.getElementById("rule").value;
+  return v === "R4" || v === "R5";
 }
 
 // ===== 保存・復元 =====
@@ -286,6 +287,8 @@ function renderRuleNote(){
     note.textContent = "総回収を人数で均等に分けます。投資はそれぞれの自己負担のままです。";
   }else if(rule === "R4"){
     note.textContent = "全員の投資（負け分）はプールが全額補填し、全体の勝ち分を稼働時間の割合で分配します。全体がマイナスのときは全員で同額の負け（均等負担）になります。";
+  }else if(rule === "R5"){
+    note.textContent = "全体の損益を、勝ち負けに関わらず各自の稼働時間の割合で分け合います。途中参加で稼働が短い人は、勝ちの取り分も負けの負担も小さくなるため、関与していない時間帯の負けを大きく背負う不公平が起きにくいです。";
   }else{
     note.textContent = "（回収−投資）の損益を全員で等分します。投資負担も含めて平準化するため、投資差の不公平感が出にくいです。";
   }
@@ -315,26 +318,35 @@ function calc(){
     document.getElementById("prizeWithdraw").innerHTML = `<div class="empty">—</div>`;
     document.getElementById("prizeInfo").textContent = "";
     formula.textContent = "";
+    renderBreakdown([], { rule, totalPL, totalHours, n });
     return;
   }
 
+  // R5 で稼働時間が全員ゼロのときは人数割りへフォールバック
+  const hoursFallback = (rule === "R5" && totalHours <= 0);
+
   const rows = members.map(m => {
     const personalPL = retOf(m) - investOf(m);
+    const hrs = hoursOf(m);
     let share;
+    let ratio = null;   // 内訳表示用（時間比）
     if(rule === "R1"){
       share = totalRet / n - investOf(m);
     }else if(rule === "R4"){
       if(totalPL >= 0){
-        const ratio = totalHours > 0 ? hoursOf(m) / totalHours : 1 / n;
+        ratio = totalHours > 0 ? hrs / totalHours : 1 / n;
         share = totalPL * ratio;
       }else{
         share = totalPL / n;
       }
+    }else if(rule === "R5"){
+      ratio = hoursFallback ? 1 / n : hrs / totalHours;
+      share = totalPL * ratio;
     }else{
       share = totalPL / n;
     }
     const settle = share - personalPL;
-    return { name:m.name, personalPL, share, settle };
+    return { name:m.name, personalPL, share, settle, hrs, ratio };
   });
 
   if(rule === "R1"){
@@ -344,6 +356,12 @@ function calc(){
       formula.textContent = `式：取り分 = 全体勝ち分(${yen(totalPL)}) × 稼働時間割合（総時間 ${totalHours.toFixed(2)} 時間）`;
     }else{
       formula.textContent = `全体マイナスのため、損失(${yen(totalPL)})を人数(${n})で均等負担（全員同額の負け）`;
+    }
+  }else if(rule === "R5"){
+    if(hoursFallback){
+      formula.textContent = `稼働時間が未入力のため、全体損益(${signYen(totalPL)})を人数(${n})で均等に按分します。`;
+    }else{
+      formula.textContent = `式：各人の損益 = 全体損益(${signYen(totalPL)}) × 自分の稼働時間 ÷ 総稼働時間(${totalHours.toFixed(2)} 時間)`;
     }
   }else{
     formula.textContent = `式：清算後損益 = (総回収(${yen(totalRet)}) − 総投資(${yen(totalInvest)})) ÷ 人数(${n})`;
@@ -359,10 +377,57 @@ function calc(){
     body.appendChild(tr);
   });
 
+  renderBreakdown(rows, { rule, totalPL, totalHours, n, hoursFallback });
+
   const transfers = buildTransfers(rows);
   renderSettlement(transfers);
   renderWithdraw(rows, transfers);
   saveState();
+}
+
+// ===== 按分の内訳（各メンバーごとの計算過程） =====
+function renderBreakdown(rows, ctx){
+  const card = document.getElementById("breakdownCard");
+  const info = document.getElementById("breakdownInfo");
+  const box  = document.getElementById("breakdown");
+
+  // R5 のときだけ表示
+  if(!ctx || ctx.rule !== "R5"){
+    card.style.display = "none";
+    box.innerHTML = "";
+    info.textContent = "";
+    return;
+  }
+
+  card.style.display = "block";
+
+  if(rows.length === 0){
+    info.textContent = "";
+    box.innerHTML = `<div class="empty">メンバーを追加してください</div>`;
+    return;
+  }
+
+  if(ctx.hoursFallback){
+    info.textContent = `稼働時間が未入力のため、全体損益 ${signYen(ctx.totalPL)} を人数 ${ctx.n} 人で均等に分けています。稼働時間を入れると、時間の割合に応じた按分に切り替わります。`;
+  }else{
+    info.textContent = `全体損益 ${signYen(ctx.totalPL)} を、総稼働時間 ${ctx.totalHours.toFixed(2)} 時間に対する各自の稼働時間の割合で分けています。稼働が短い人ほど、勝ちも負けも取り分・負担が小さくなります。`;
+  }
+
+  box.innerHTML = rows.map(r => {
+    const pct = (r.ratio != null ? r.ratio * 100 : (100 / ctx.n));
+    const hrsText = ctx.hoursFallback
+      ? `均等割り（1 ÷ ${ctx.n}人）`
+      : `${r.hrs.toFixed(2)}時間 ÷ ${ctx.totalHours.toFixed(2)}時間`;
+    return `
+      <div class="breakdown-line">
+        <div class="bname">${escapeHtml(r.name)}</div>
+        <div class="bcalc">
+          <span class="bstep">時間割合：${hrsText} = <b>${pct.toFixed(1)}%</b></span>
+          <span class="bstep">取り分：${signYen(ctx.totalPL)} × ${pct.toFixed(1)}% = <b class="${signClass(r.share)}">${signYen(r.share)}</b></span>
+          <span class="bstep">個人損益 ${signYen(r.personalPL)} との差 → 精算 <b class="${signClass(r.settle)}">${signYen(r.settle)}</b>（${settleLabel(r.settle)}）</span>
+        </div>
+      </div>`;
+  }).join("");
 }
 
 function buildTransfers(rows){

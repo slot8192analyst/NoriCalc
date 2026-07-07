@@ -202,6 +202,29 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 }
 .settle-line b{color:var(--accent-hover);}
 
+/* ===== 按分の内訳（R5の計算過程） ===== */
+.breakdown-line{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:11px 14px;
+  margin-top:8px;
+  font-size:14px;
+}
+.breakdown-line .bname{font-weight:600;font-size:15px;margin-bottom:6px;}
+.breakdown-line .bcalc{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.breakdown-line .bstep{
+  font-size:13px;
+  color:var(--muted);
+}
+.breakdown-line .bstep b{color:var(--text);font-weight:700;}
+.breakdown-line .bstep b.plus{color:var(--plus);}
+.breakdown-line .bstep b.minus{color:var(--minus);}
+
 /* ===== 景品チップ（アイコン＋ ×個数） ===== */
 .prize-detail{
   margin-top:4px;
