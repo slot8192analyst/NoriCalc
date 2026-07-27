@@ -216,6 +216,50 @@ button.btn:hover{background:var(--accent-hover);}
 .switch input:checked + .slider{background:var(--accent);border-color:var(--accent);}
 .switch input:checked + .slider:before{transform:translateX(22px);background:#fff;}
 
+/* ===== 時刻の一括入力 ===== */
+.bulk-time{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 14px;
+  margin-bottom:14px;
+}
+.bulk-time.is-hidden{display:none;}
+.bulk-row-top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.bulk-check-all{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  white-space:nowrap;
+  font-size:14px;
+  font-weight:600;
+}
+.bulk-check-all input{width:20px;height:20px;flex-shrink:0;}
+.bulk-info{font-size:12px;color:var(--muted);}
+.bulk-row-apply{display:flex;gap:10px;flex-wrap:wrap;}
+.bulk-field{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1;
+  min-width:240px;
+}
+.bulk-flabel{
+  font-size:13px;
+  color:var(--muted);
+  width:32px;
+  flex-shrink:0;
+}
+.bulk-field input[type="time"]{flex:1;min-width:0;min-height:44px;text-align:center;}
+.bulk-apply{flex-shrink:0;padding:11px 14px;}
+
 /* ===== メンバーカード ===== */
 .member-card{
   background:var(--card2);
@@ -226,6 +270,9 @@ button.btn:hover{background:var(--accent-hover);}
 }
 .member-card:last-child{margin-bottom:0;}
 .member-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.member-head-left{display:flex;align-items:center;gap:10px;min-width:0;}
+.member-check{width:20px;height:20px;flex-shrink:0;cursor:pointer;}
+.member-check.is-hidden{display:none;}
 .member-name{font-size:17px;font-weight:600;}
 .member-pl{font-size:13px;color:var(--muted);}
 .member-pl b{color:var(--text);}
@@ -248,34 +295,82 @@ button.btn:hover{background:var(--accent-hover);}
 .io-box.ret{border-left:3px solid var(--plus);}
 .io-box.ret .t{color:var(--plus);}
 
-.time-box{grid-column:1/-1;}
-.time-box.is-hidden{display:none;}
-.time-row{
+/* ===== 稼働時間の結果表示（カード内・読み取り専用） ===== */
+.time-summary{
+  grid-column:1/-1;
   display:flex;
   align-items:center;
-  gap:8px;
-  margin-bottom:8px;
+  justify-content:space-between;
+  gap:10px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
 }
-.time-row:last-of-type{margin-bottom:0;}
-.time-label{
-  width:38px;
+.time-summary.is-hidden{display:none;}
+.time-summary .ts-text{font-size:13px;color:var(--muted);min-width:0;}
+.time-summary .ts-text b{color:var(--text);}
+.time-summary .ts-range{color:var(--muted);}
+.time-summary .ts-none{color:var(--minus);}
+.time-edit-btn{
   flex-shrink:0;
-  color:var(--muted);
+  background:var(--card2);
+  border:1px solid var(--border);
+  color:var(--text);
+  border-radius:10px;
+  padding:8px 14px;
+  min-height:40px;
   font-size:13px;
+  cursor:pointer;
+  white-space:nowrap;
+  width:auto;
 }
-.time-row select{
-  flex:1;
-  min-width:0;
-  padding:10px 8px;
-  min-height:44px;
-  font-size:15px;
-  text-align:center;
+.time-edit-btn:hover{border-color:var(--accent);background:#262626;}
+
+/* （旧）常設の時刻入力欄・個別今ボタン用：現在は未使用 */
+.time-box{grid-column:1/-1;}
+.time-box.is-hidden{display:none;}
+.time-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.time-row:last-of-type{margin-bottom:0;}
+.time-label{width:38px;flex-shrink:0;color:var(--muted);font-size:13px;}
+.time-row input[type="time"]{
+  flex:1;min-width:0;padding:10px 8px;min-height:44px;font-size:15px;text-align:center;
 }
 .time-sep{color:var(--muted);font-size:14px;flex-shrink:0;}
 .time-result{margin-top:8px;font-size:12px;color:var(--muted);}
 .time-result b{color:var(--text);}
 
 .empty-members{color:var(--muted);font-size:14px;padding:6px 2px;}
+
+/* ===== 個別時刻編集ポップアップ ===== */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:200;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  width:100%;
+  max-width:360px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:16px;}
+.modal-field{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.modal-flabel{width:40px;flex-shrink:0;color:var(--muted);font-size:14px;}
+.modal-field input[type="time"]{flex:1;min-height:46px;text-align:center;font-size:16px;}
+.modal-hours{font-size:13px;color:var(--muted);margin:4px 0 18px;}
+.modal-hours b{color:var(--text);}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+.modal-cancel{background:var(--card2);border:1px solid var(--border);color:var(--text);}
+.modal-cancel:hover{background:#262626;border-color:var(--accent);}
 
 /* ===== ルール・結果 ===== */
 .rule-note{font-size:13px;color:var(--muted);margin-top:10px;}
@@ -323,15 +418,8 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   font-size:14px;
 }
 .breakdown-line .bname{font-weight:600;font-size:15px;margin-bottom:6px;}
-.breakdown-line .bcalc{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-.breakdown-line .bstep{
-  font-size:13px;
-  color:var(--muted);
-}
+.breakdown-line .bcalc{display:flex;flex-direction:column;gap:4px;}
+.breakdown-line .bstep{font-size:13px;color:var(--muted);}
 .breakdown-line .bstep b{color:var(--text);font-weight:700;}
 .breakdown-line .bstep b.plus{color:var(--plus);}
 .breakdown-line .bstep b.minus{color:var(--minus);}
@@ -354,12 +442,7 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   border-radius:999px;
   padding:3px 9px;
 }
-.prize-chip .p-ico{
-  width:14px;
-  height:14px;
-  border-radius:3px;
-  flex-shrink:0;
-}
+.prize-chip .p-ico{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
 .prize-chip .p-ico.big{
   background:linear-gradient(135deg,#f3d27a,var(--gold));
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);
@@ -405,7 +488,7 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   opacity:0;
   pointer-events:none;
   transition:opacity .2s, transform .2s;
-  z-index:100;
+  z-index:300;
   box-shadow:0 6px 20px rgba(0,0,0,.4);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -421,6 +504,8 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
   .quick-rate input{width:54px;}
   .acc-head{padding:14px 16px;}
   .accordion.open .acc-body{padding:0 16px 16px;}
+
+  .bulk-field{min-width:0;flex:1 1 100%;}
 
   #resultTable thead{
     position:absolute;
@@ -467,3 +552,24 @@ th{color:var(--muted);font-weight:600;font-size:12px;}
 @media(max-width:480px){
   body{padding:12px;}
 }
+
+/* ===== 結果まとめ（1枚画像用グループ） ===== */
+.report-group{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.report-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 16px;
+}
+.report-bar-label{font-size:13px;color:var(--muted);}
+.report-copy-btn{flex-shrink:0;}

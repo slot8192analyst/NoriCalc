@@ -1,10 +1,6 @@
 // ===== 状態 =====
 const DEFAULT_START = "09:00";
 
-const HOUR_START = 6;
-const HOUR_END   = 25;
-const MIN_STEP   = 5;
-
 let members = [
   { name: "A", investYen: 0, investMai: 0, retMai: 0, start: DEFAULT_START, end: "" },
   { name: "B", investYen: 0, investMai: 0, retMai: 0, start: DEFAULT_START, end: "" },
@@ -15,6 +11,11 @@ const EXCH_BASE = 1000;
 
 const PRIZE_BIG = 5000;
 const PRIZE_MID = 1000;
+
+// 一括入力：チェックされたメンバーのindexを保持（再描画をまたいで維持）
+let checkedSet = new Set();
+// ポップアップで編集中のメンバーindex
+let editingIndex = null;
 
 const RULE_LABELS = {
   R1: "総回収を人数で均等分配",
@@ -47,30 +48,6 @@ function nowHHMM(){
   return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
 }
 
-function splitTime(t){
-  if(!t || !/^\d{1,2}:\d{2}$/.test(t)) return { h:null, m:null };
-  const [h, m] = t.split(":").map(Number);
-  return { h, m };
-}
-
-function hourOptions(selected){
-  let out = `<option value=""${selected===null?" selected":""}>--</option>`;
-  for(let h = HOUR_START; h <= HOUR_END; h++){
-    const label = String(h % 24).padStart(2,"0");
-    out += `<option value="${h % 24}"${selected===(h%24)?" selected":""}>${label}</option>`;
-  }
-  return out;
-}
-
-function minuteOptions(selected){
-  let out = `<option value=""${selected===null?" selected":""}>--</option>`;
-  for(let m = 0; m < 60; m += MIN_STEP){
-    const label = String(m).padStart(2,"0");
-    out += `<option value="${m}"${selected===m?" selected":""}>${label}</option>`;
-  }
-  return out;
-}
-
 function toMinutes(t){
   if(!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
   const [h,m] = t.split(":").map(Number);
@@ -81,8 +58,8 @@ function hoursOf(m){
   const s = toMinutes(m.start);
   const e = toMinutes(m.end);
   if(s === null || e === null) return 0;
-  let diff = e - s;
-  if(diff < 0) diff += 24*60;
+  const diff = e - s;
+  if(diff <= 0) return 0;   // 終了が開始以前なら不正入力として0扱い
   return diff / 60;
 }
 
@@ -140,13 +117,32 @@ function saveState(){
   }catch(e){}
 }
 
+function sanitizeMember(m, i){
+  const num = v => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  };
+  const time = v => (typeof v === "string" && /^\d{1,2}:\d{2}$/.test(v)) ? v : "";
+  return {
+    name: (m && typeof m.name === "string" && m.name.trim())
+            ? m.name : String.fromCharCode(65 + i),
+    investYen: num(m && m.investYen),
+    investMai: num(m && m.investMai),
+    retMai:    num(m && m.retMai),
+    start: (m && time(m.start)) ? m.start : DEFAULT_START,
+    end:   time(m && m.end),
+  };
+}
+
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return false;
     const data = JSON.parse(raw);
-    if(Array.isArray(data.members)) members = data.members;
-    if(typeof data.rate === "number") rate = data.rate;
+    if(Array.isArray(data.members)){
+      members = data.members.map((m, i) => sanitizeMember(m, i));
+    }
+    if(typeof data.rate === "number" && data.rate > 0) rate = data.rate;
     if(data.rateMode === "yen" || data.rateMode === "mai") rateMode = data.rateMode;
     if(data.rule) document.getElementById("rule").value = data.rule;
     return true;
@@ -158,7 +154,44 @@ function render(){
   renderRateUI();
   renderCards();
   renderRuleNote();
+  renderBulkBar();
   calc();
+}
+
+// ===== 時刻の一括入力バー =====
+function renderBulkBar(){
+  const bar = document.getElementById("bulkTime");
+  const show = ruleUsesHours() && members.length > 0;
+  bar.classList.toggle("is-hidden", !show);
+  if(!show) return;
+
+  // チェック済みindexのうち存在しないものを掃除
+  [...checkedSet].forEach(i => { if(i >= members.length) checkedSet.delete(i); });
+
+  const allChecked = members.length > 0 && checkedSet.size === members.length;
+  document.getElementById("bulkCheckAll").checked = allChecked;
+
+  const endInput = document.getElementById("bulkEndTime");
+  if(!endInput.value) endInput.value = nowHHMM();
+
+  const info = document.getElementById("bulkInfo");
+  info.textContent = checkedSet.size > 0
+    ? `${checkedSet.size}人を選択中`
+    : "対象にチェック → 時刻を選んで一括反映";
+}
+
+// 一括：チェック中のメンバーに開始 or 終了を反映
+function applyBulk(which, time){
+  if(!time){ showToast("時刻を選んでください"); return; }
+  if(checkedSet.size === 0){ showToast("対象にチェックを入れてください"); return; }
+  checkedSet.forEach(i => { if(members[i]) members[i][which] = time; });
+  const cnt = checkedSet.size;
+  checkedSet.clear();
+  renderCards();
+  renderBulkBar();
+  calc();
+  const label = which === "start" ? "開始" : "終了";
+  showToast(`${cnt}人の${label}を ${time} にしました`);
 }
 
 function renderCards(){
@@ -175,11 +208,27 @@ function renderCards(){
   members.forEach((m, i) => {
     const pl = retOf(m) - investOf(m);
     const hrs = hoursOf(m);
+    const isChecked = checkedSet.has(i);
+
+    // 稼働時間の結果テキスト
+    let tsInner;
+    if(m.start && m.end && hrs > 0){
+      tsInner = `稼働 <b>${hrs.toFixed(2)}</b> h　<span class="ts-range">${m.start} → ${m.end}</span>`;
+    }else if(m.start && m.end){
+      tsInner = `<span class="ts-none">時刻を確認してください（${m.start} → ${m.end}）</span>`;
+    }else{
+      tsInner = `<span class="ts-none">終了時刻が未入力</span>`;
+    }
+
     const card = document.createElement("div");
     card.className = "member-card";
     card.innerHTML = `
       <div class="member-head">
-        <div class="member-name">${escapeHtml(m.name)}</div>
+        <div class="member-head-left">
+          <input type="checkbox" class="member-check${showHours ? "" : " is-hidden"}"
+                 data-check="${i}" ${isChecked ? "checked" : ""} title="一括入力の対象">
+          <div class="member-name">${escapeHtml(m.name)}</div>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;">
           <div class="member-pl">現在損益：<b class="${signClass(pl)}">${signYen(pl)}</b></div>
           <button class="x-btn" title="削除">×</button>
@@ -198,29 +247,31 @@ function renderCards(){
           <div class="t">回収（枚）</div>
           <div class="f"><input inputmode="numeric" enterkeyhint="done" data-k="retMai" placeholder="0" value="${groupNum(m.retMai)}">枚</div>
         </div>
-        <div class="io-box time-box${showHours ? "" : " is-hidden"}">
-          <div class="t">稼働時間（開始 → 終了）</div>
-          <div class="time-row">
-            <span class="time-label">開始</span>
-            <select data-tk="start-h">${hourOptions(splitTime(m.start).h)}</select>
-            <span class="time-sep">:</span>
-            <select data-tk="start-m">${minuteOptions(splitTime(m.start).m)}</select>
-          </div>
-          <div class="time-row">
-            <span class="time-label">終了</span>
-            <select data-tk="end-h">${hourOptions(splitTime(m.end).h)}</select>
-            <span class="time-sep">:</span>
-            <select data-tk="end-m">${minuteOptions(splitTime(m.end).m)}</select>
-          </div>
-          <div class="time-result">稼働：<b class="js-hours">${hrs.toFixed(2)}</b> h</div>
+        <div class="time-summary${showHours ? "" : " is-hidden"}">
+          <span class="ts-text">${tsInner}</span>
+          <button class="time-edit-btn" type="button" data-edit="${i}">時刻</button>
         </div>
       </div>`;
 
     card.querySelector(".x-btn").onclick = () => {
-      if(confirm(`${members[i].name} を削除しますか？`)){ members.splice(i,1); render(); }
+      if(confirm(`${members[i].name} を削除しますか？`)){
+        members.splice(i,1);
+        checkedSet.clear();   // index がずれるので選択はリセット
+        render();
+      }
     };
 
-    card.querySelectorAll("input").forEach(inp => {
+    // チェックボックス
+    const chk = card.querySelector("input[data-check]");
+    if(chk){
+      chk.onchange = () => {
+        if(chk.checked) checkedSet.add(i); else checkedSet.delete(i);
+        renderBulkBar();
+      };
+    }
+
+    // 数値入力
+    card.querySelectorAll("input[data-k]").forEach(inp => {
       const k = inp.dataset.k;
       inp.oninput = () => {
         const v = parseInt(inp.value.replace(/[^0-9]/g,""),10) || 0;
@@ -235,25 +286,55 @@ function renderCards(){
       inp.onfocus = () => { inp.value = members[i][k] ? String(members[i][k]) : ""; };
     });
 
-    card.querySelectorAll("select[data-tk]").forEach(sel => {
-      sel.onchange = () => {
-        const [which, part] = sel.dataset.tk.split("-");
-        const cur = splitTime(members[i][which]);
-        let h = part === "h" ? (sel.value === "" ? null : Number(sel.value)) : cur.h;
-        let m = part === "m" ? (sel.value === "" ? null : Number(sel.value)) : cur.m;
-
-        if(h === null || m === null){
-          members[i][which] = "";
-        }else{
-          members[i][which] = String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
-        }
-        card.querySelector(".js-hours").textContent = hoursOf(members[i]).toFixed(2);
-        calc();
-      };
-    });
+    // 時刻編集ボタン → ポップアップ
+    const editBtn = card.querySelector("button[data-edit]");
+    if(editBtn){
+      editBtn.onclick = () => openTimeModal(i);
+    }
 
     box.appendChild(card);
   });
+}
+
+// ===== 個別時刻編集ポップアップ =====
+function openTimeModal(i){
+  editingIndex = i;
+  const m = members[i];
+  const overlay = document.getElementById("timeModal");
+  document.getElementById("modalTitle").textContent = `${m.name} の時刻を編集`;
+  const s = document.getElementById("modalStart");
+  const e = document.getElementById("modalEnd");
+  s.value = m.start || "";
+  e.value = m.end || "";
+  updateModalHours();
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden", "false");
+}
+
+function closeTimeModal(){
+  editingIndex = null;
+  const overlay = document.getElementById("timeModal");
+  overlay.classList.remove("open");
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+function updateModalHours(){
+  const s = document.getElementById("modalStart").value;
+  const e = document.getElementById("modalEnd").value;
+  const h = hoursOf({ start:s, end:e });
+  document.getElementById("modalHours").textContent = h.toFixed(2);
+}
+
+function saveTimeModal(){
+  if(editingIndex === null) return;
+  const s = document.getElementById("modalStart").value;
+  const e = document.getElementById("modalEnd").value;
+  members[editingIndex].start = s;
+  members[editingIndex].end = e;
+  closeTimeModal();
+  renderCards();
+  renderBulkBar();
+  calc();
 }
 
 function renderRateUI(){
@@ -346,7 +427,7 @@ function calc(){
 
   const hoursFallback = (rule === "R5" && totalHours <= 0);
 
-  const rows = members.map(m => {
+  let rows = members.map(m => {
     const personalPL = retOf(m) - investOf(m);
     const hrs = hoursOf(m);
     let share;
@@ -366,8 +447,15 @@ function calc(){
     }else{
       share = totalPL / n;
     }
-    const settle = share - personalPL;
-    return { name:m.name, personalPL, share, settle, hrs, ratio };
+    return { name:m.name, personalPL, share, hrs, ratio };
+  });
+
+  // ===== 端数処理（M-1）=====
+  rows = settleRounding(rows, totalPL);
+
+  rows.forEach(r => {
+    r.personalPL = Math.round(r.personalPL);
+    r.settle = r.share - r.personalPL;
   });
 
   if(rule === "R1"){
@@ -451,8 +539,8 @@ function renderBreakdown(rows, ctx){
 }
 
 function buildTransfers(rows){
-  let creditors = rows.filter(r=>r.settle > 0.5).map(r=>({name:r.name, amt:r.settle}));
-  let debtors   = rows.filter(r=>r.settle < -0.5).map(r=>({name:r.name, amt:-r.settle}));
+  let creditors = rows.filter(r=>r.settle > 0).map(r=>({name:r.name, amt:r.settle}));
+  let debtors   = rows.filter(r=>r.settle < 0).map(r=>({name:r.name, amt:-r.settle}));
   creditors.sort((a,b)=>b.amt-a.amt);
   debtors.sort((a,b)=>b.amt-a.amt);
 
@@ -461,12 +549,29 @@ function buildTransfers(rows){
   while(ci < creditors.length && di < debtors.length){
     const c = creditors[ci], d = debtors[di];
     const pay = Math.min(c.amt, d.amt);
-    transfers.push({ from:d.name, to:c.name, amount:pay });
+    if(pay > 0) transfers.push({ from:d.name, to:c.name, amount:pay });
     c.amt -= pay; d.amt -= pay;
-    if(c.amt <= 0.5) ci++;
-    if(d.amt <= 0.5) di++;
+    if(c.amt <= 0) ci++;
+    if(d.amt <= 0) di++;
   }
   return transfers;
+}
+
+// 取り分を1円単位に丸め、丸め残差を吸収して合計を target に一致させる
+function settleRounding(rows, target){
+  if(rows.length === 0) return rows;
+  const tgt = Math.round(target);
+  rows.forEach(r => { r.share = Math.round(r.share); });
+  let sum = rows.reduce((s, r) => s + r.share, 0);
+  let diff = tgt - sum;
+  if(diff !== 0){
+    let idx = 0, max = -Infinity;
+    rows.forEach((r, i) => {
+      if(Math.abs(r.share) > max){ max = Math.abs(r.share); idx = i; }
+    });
+    rows[idx].share += diff;
+  }
+  return rows;
 }
 
 function renderSettlement(transfers){
@@ -559,7 +664,7 @@ async function copySection(selector, label){
         showToast(`「${label}」を画像でコピーしました`);
         return;
       }catch(err){
-        // コピー非対応/失敗 → ダウンロードにフォールバック
+        // フォールバック
       }
     }
     downloadBlob(blob, label);
@@ -600,6 +705,7 @@ document.getElementById("newName").addEventListener("keydown", e => { if(e.key==
 document.getElementById("rule").onchange = () => {
   renderRuleNote();
   renderCards();
+  renderBulkBar();
   calc();
 };
 
@@ -665,6 +771,35 @@ document.getElementById("ruleHead").onclick = (e) => {
     .setAttribute("aria-expanded", ruleCard.classList.contains("open"));
 };
 
+// ===== 時刻の一括入力 =====
+document.getElementById("bulkCheckAll").onchange = (e) => {
+  checkedSet.clear();
+  if(e.target.checked){
+    members.forEach((_, i) => checkedSet.add(i));
+  }
+  renderCards();
+  renderBulkBar();
+};
+
+document.getElementById("bulkStartBtn").onclick = () => {
+  applyBulk("start", document.getElementById("bulkStartTime").value);
+};
+document.getElementById("bulkEndBtn").onclick = () => {
+  applyBulk("end", document.getElementById("bulkEndTime").value || nowHHMM());
+};
+
+// ===== 個別時刻編集ポップアップ =====
+document.getElementById("modalStart").addEventListener("input", updateModalHours);
+document.getElementById("modalEnd").addEventListener("input", updateModalHours);
+document.getElementById("modalSave").onclick = saveTimeModal;
+document.getElementById("modalCancel").onclick = closeTimeModal;
+document.getElementById("timeModal").addEventListener("click", (e) => {
+  if(e.target.id === "timeModal") closeTimeModal();   // 背景クリックで閉じる
+});
+document.addEventListener("keydown", (e) => {
+  if(e.key === "Escape" && editingIndex !== null) closeTimeModal();
+});
+
 function addMember(){
   const inp = document.getElementById("newName");
   const name = inp.value.trim() || String.fromCharCode(65 + members.length);
@@ -685,5 +820,8 @@ if(restored){
   document.getElementById("rate").value = rate.toFixed(2);
   document.getElementById("rateExch").value = 51;
 }
+
+// 一括バーの終了初期値
+document.getElementById("bulkEndTime").value = nowHHMM();
 
 render();
