@@ -479,10 +479,12 @@ function calc(){
   rows.forEach(r => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td data-label="メンバー">${escapeHtml(r.name)}</td>
-      <td data-label="個人損益" class="${signClass(r.personalPL)}">${signYen(r.personalPL)}</td>
-      <td data-label="清算後の取り分" class="${signClass(r.share)}">${signYen(r.share)}</td>
-      <td data-label="精算" class="${signClass(r.settle)}">${signYen(r.settle)}<span class="settle-tag">（${settleLabel(r.settle)}）</span></td>`;
+      <td data-label="メンバー" class="r-name">${escapeHtml(r.name)}</td>
+      <td data-label="個人損益" class="r-pl ${signClass(r.personalPL)}">${signYen(r.personalPL)}</td>
+      <td data-label="精算" class="r-settle">
+        <span class="r-amt ${signClass(r.settle)}">${signYen(r.settle)}<span class="settle-tag">（${settleLabel(r.settle)}）</span></span>
+      </td>
+      <td data-label="取り分" class="r-share ${signClass(r.share)}">${signYen(r.share)}</td>`;
     body.appendChild(tr);
   });
 
@@ -576,6 +578,7 @@ function settleRounding(rows, target){
 
 function renderSettlement(transfers){
   const box = document.getElementById("settle");
+  if(!box) return;   // 精算欄を削除した場合は何もしない
   if(transfers.length === 0){
     box.innerHTML = `<div class="empty">精算は不要です（全員ちょうど）</div>`;
     return;
@@ -689,12 +692,14 @@ function downloadBlob(blob, label){
 }
 
 // コピーボタンのイベントを一括登録（イベント委譲）
+// .copy-btn（アイコン）と .report-copy-btn（まとめボタン）の両方に対応
 document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".copy-btn");
+  const btn = e.target.closest("[data-copy]");
   if(!btn) return;
   const selector = btn.dataset.copy;
-  const section = document.querySelector(selector);
-  const label = (section && section.dataset.copyLabel) || "セクション";
+  const label = btn.dataset.copyLabel
+    || (document.querySelector(selector)?.dataset.copyLabel)
+    || "セクション";
   copySection(selector, label);
 });
 
