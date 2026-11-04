@@ -1,10 +1,15 @@
 // ===== 状態 =====
 const DEFAULT_START = "09:00";
 
-let members = [
-  { name: "A", investYen: 0, investMai: 0, retMai: 0, start: DEFAULT_START, end: "" },
-  { name: "B", investYen: 0, investMai: 0, retMai: 0, start: DEFAULT_START, end: "" },
-];
+// 初期登録メンバー（当日いない人はカードを削除して使う）
+const DEFAULT_MEMBER_NAMES = ["江崎", "梶田", "志村", "高木", "福原", "大前", "坂井", "中江", "琉司"];
+
+function newMember(name){
+  return { name, investYen: 0, investMai: 0, retMai: 0, start: DEFAULT_START, end: nowHHMM() };
+}
+function defaultMembers(){ return DEFAULT_MEMBER_NAMES.map(newMember); }
+
+let members = defaultMembers();
 let rate = 19.61;
 let rateMode = "mai";
 const EXCH_BASE = 1000;
@@ -108,6 +113,7 @@ const STORAGE_KEY = "noriuchi_calc_v1";
 function saveState(){
   try{
     const data = {
+      v: 2,
       members,
       rate,
       rateMode,
@@ -140,7 +146,12 @@ function loadState(){
     if(!raw) return false;
     const data = JSON.parse(raw);
     if(Array.isArray(data.members)){
-      members = data.members.map((m, i) => sanitizeMember(m, i));
+      const loaded = data.members.map((m, i) => sanitizeMember(m, i));
+      // 旧バージョン(初期メンバー登録前)の保存データで、何も入力されていなければ初期メンバーを使う
+      const untouched = loaded.every(m => !m.investYen && !m.investMai && !m.retMai);
+      if(data.v === 2 || !untouched){
+        members = loaded;
+      }
     }
     if(typeof data.rate === "number" && data.rate > 0) rate = data.rate;
     if(data.rateMode === "yen" || data.rateMode === "mai") rateMode = data.rateMode;
@@ -254,7 +265,9 @@ function renderCards(){
       </div>`;
 
     card.querySelector(".x-btn").onclick = () => {
-      if(confirm(`${members[i].name} を削除しますか？`)){
+      const mm = members[i];
+      const hasInput = mm.investYen || mm.investMai || mm.retMai;
+      if(!hasInput || confirm(`${mm.name} の入力済みデータを削除しますか？`)){
         members.splice(i,1);
         checkedSet.clear();   // index がずれるので選択はリセット
         render();
@@ -397,9 +410,45 @@ function renderRuleNote(){
   renderRuleSummary();
 }
 
+// ===== 入力内容（画像用ビュー） =====
+function renderInputReport(){
+  const body = document.getElementById("inputBody");
+  const showHours = ruleUsesHours();
+  const ruleKey = document.getElementById("rule").value;
+  const exch = rate > 0 ? Math.round(EXCH_BASE / rate) : 0;
+  const d = new Date();
+  const stamp = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+  document.getElementById("inputReportInfo").textContent =
+    `${stamp}　交換率 ${exch}枚交換（${rate.toFixed(2)}円/枚）／ ルール：${RULE_LABELS[ruleKey] || ""}`;
+  document.getElementById("inputTable").classList.toggle("no-time", !showHours);
+
+  if(members.length === 0){
+    body.innerHTML = `<tr><td colspan="5" class="empty">メンバーを追加してください</td></tr>`;
+    return;
+  }
+  body.innerHTML = members.map(m => {
+    const pl = Math.round(retOf(m) - investOf(m));
+    const hrs = hoursOf(m);
+    const timeText = (m.start && m.end)
+      ? `${m.start}→${m.end}<small>${hrs > 0 ? hrs.toFixed(2) + "h" : "要確認"}</small>`
+      : "—";
+    const inv = [];
+    if(m.investYen) inv.push(`${m.investYen.toLocaleString("ja-JP")}円`);
+    if(m.investMai) inv.push(`${m.investMai.toLocaleString("ja-JP")}枚`);
+    return `<tr>
+      <td data-label="メンバー" class="r-name">${escapeHtml(m.name)}</td>
+      <td data-label="稼働時間" class="col-time">${timeText}</td>
+      <td data-label="投資">${inv.length ? inv.join(" + ") : "—"}</td>
+      <td data-label="回収">${m.retMai ? m.retMai.toLocaleString("ja-JP") + "枚" : "—"}</td>
+      <td data-label="個人損益" class="r-pl ${signClass(pl)}">${signYen(pl)}</td>
+    </tr>`;
+  }).join("");
+}
+
 // ===== 計算 =====
 function calc(){
   const rule = document.getElementById("rule").value;
+  renderInputReport();
   const n = members.length;
   const totalInvest = members.reduce((s,m)=>s+investOf(m),0);
   const totalRet    = members.reduce((s,m)=>s+retOf(m),0);
@@ -644,13 +693,13 @@ function showToast(msg){
 }
 
 // ===== セクションを画像化してコピー／保存 =====
-async function copySection(selector, label){
+async function copySection(selector, label, trigger){
   const el = document.querySelector(selector);
   if(!el || typeof html2canvas === "undefined"){
     showToast("画像化に失敗しました");
     return;
   }
-  const btn = el.querySelector(".copy-btn");
+  const btn = trigger || el.querySelector(".copy-btn");
   btn && btn.classList.add("busy");
   try{
     const canvas = await html2canvas(el, {
@@ -700,7 +749,7 @@ document.addEventListener("click", (e) => {
   const label = btn.dataset.copyLabel
     || (document.querySelector(selector)?.dataset.copyLabel)
     || "セクション";
-  copySection(selector, label);
+  copySection(selector, label, btn);
 });
 
 // ===== イベント =====
@@ -805,10 +854,216 @@ document.addEventListener("keydown", (e) => {
   if(e.key === "Escape" && editingIndex !== null) closeTimeModal();
 });
 
+// ===== テキスト入力 =====
+// 例）
+//   坂井
+//   09:00-22:00
+//   +3000枚
+// ・名前の行 → 以降の時刻／枚数はその人に反映（「坂井 09:00-22:00 +3000枚」の1行形式もOK）
+// ・+◯枚 は回収(枚)、-◯枚 は投資(枚) に入れます（収支として入力）
+// ・「投資 2000枚」「回収 3000枚」「投資 1000円」のような書き方もOK
+//PARSER_START
+function normalizeText(t){
+  return String(t)
+    .normalize("NFKC")
+    .replace(/[−‐‑–—―]/g, "-")
+    .replace(/[〜～]/g, "~");
+}
+
+function fmtTime(h, m){
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+}
+
+function extractTime(text){
+  const sep = "\\s*(?:-|~|ー|→|から)\\s*";
+  // 1) 9:00-22:00 / 9時-22時 / 9時30分~22時
+  const T = "(\\d{1,2})(?:[:：](\\d{2})|時(?:(\\d{1,2})分?)?)";
+  let re = new RegExp("(?<!\\d)" + T + sep + T + "(?!\\d)");
+  let m = text.match(re);
+  let h1, m1, h2, m2;
+  if(m){
+    h1 = +m[1]; m1 = +(m[2] || m[3] || 0);
+    h2 = +m[4]; m2 = +(m[5] || m[6] || 0);
+  }else{
+    // 2) 9-22（数字だけ。枚/円が続く場合は金額なので除外）
+    re = new RegExp("(?<![\\d+\\-])(\\d{1,2})" + sep + "(\\d{1,2})(?!\\d)(?!\\s*[枚円])");
+    m = text.match(re);
+    if(!m) return null;
+    h1 = +m[1]; m1 = 0; h2 = +m[2]; m2 = 0;
+  }
+  if(h1 > 24 || h2 > 24 || m1 > 59 || m2 > 59) return null;
+  return {
+    start: fmtTime(h1, m1),
+    end: fmtTime(h2, m2),
+    rest: text.replace(m[0], " "),
+  };
+}
+
+function extractAmount(text){
+  let kind = "net";
+  if(/投資|出資|使用|IN/i.test(text)) kind = "invest";
+  else if(/回収|出玉|返却|OUT/i.test(text)) kind = "ret";
+  const m = text.match(/([+\-±])?\s*(\d[\d,]*)\s*(枚|円|まい|えん)?/);
+  if(!m) return null;
+  const sign = m[1] || "";
+  const unit = m[3] ? (/円|えん/.test(m[3]) ? "yen" : "mai") : "mai";
+  if(!sign && !m[3] && kind === "net") return null;   // 記号も単位も無い数字は金額とみなさない
+  const value = parseInt(m[2].replace(/,/g, ""), 10) || 0;
+  const rest = text.replace(m[0], " ").replace(/投資|出資|使用|回収|出玉|返却|\bIN\b|\bOUT\b/gi, " ");
+  return { kind, neg: sign === "-", value, unit, rest };
+}
+
+function cleanName(s){
+  return s
+    .replace(/[:,、\/|・]/g, " ")
+    .replace(/^[\s\-]+|[\s\-]+$/g, "")
+    .replace(/(さん|くん|君|ちゃん)$/, "")
+    .trim();
+}
+
+// テキスト → [{name, start, end, amount:{...}|null}]（登場順）／ 解釈できなかった行
+function parseMemberText(raw, rateNow){
+  const entries = [];
+  const bad = [];
+  let cur = null;
+  const getEntry = name => {
+    let e = entries.find(x => x.name === name);
+    if(!e){ e = { name, start: null, end: null, invest: null, ret: null }; entries.push(e); }
+    return e;
+  };
+
+  normalizeText(raw).split(/\r?\n/).forEach(line0 => {
+    const line = line0.trim();
+    if(!line) return;
+    let rest = line;
+
+    const t = extractTime(rest);
+    if(t) rest = t.rest;
+
+    const a = extractAmount(rest);
+    if(a) rest = a.rest;
+
+    const name = cleanName(rest);
+    // 名前として妥当（数字・記号を含まない／長すぎない）な場合のみ対象メンバーを切り替える
+    const nameOk = name && !/[\d+\-~:±]/.test(name) && name.length <= 12;
+    if(nameOk) cur = getEntry(name);
+
+    if(name && !nameOk){ bad.push(line0.trim()); return; }
+    if(!t && !a){
+      if(!name) bad.push(line0.trim());
+      return;
+    }
+    if(!cur){ bad.push(line0.trim()); return; }
+
+    if(t){ cur.start = t.start; cur.end = t.end; }
+    if(a){
+      let { kind, neg, value, unit } = a;
+      if(kind === "net"){
+        // 収支：マイナス → 投資、プラス → 回収
+        if(neg){
+          cur.invest = { yen: unit === "yen" ? value : 0, mai: unit === "mai" ? value : 0 };
+          cur.ret = 0;
+        }else{
+          const mai = unit === "yen" ? Math.round(value / (rateNow > 0 ? rateNow : 19.61)) : value;
+          cur.invest = { yen: 0, mai: 0 };
+          cur.ret = mai;
+        }
+      }else if(kind === "invest"){
+        const prev = cur.invest || { yen: 0, mai: 0 };
+        cur.invest = unit === "yen" ? { yen: value, mai: prev.mai } : { yen: prev.yen, mai: value };
+      }else{
+        cur.ret = unit === "yen" ? Math.round(value / (rateNow > 0 ? rateNow : 19.61)) : value;
+      }
+    }
+  });
+  return { entries, bad };
+}
+//PARSER_END
+
+function applyParsedEntries(entries){
+  const added = [];
+  const lines = [];
+  entries.forEach(e => {
+    let m = members.find(x => x.name.toLowerCase() === e.name.toLowerCase());
+    if(!m){
+      m = newMember(e.name);
+      members.push(m);
+      added.push(e.name);
+    }
+    const parts = [];
+    if(e.start && e.end){ m.start = e.start; m.end = e.end; parts.push(`${e.start}→${e.end}`); }
+    if(e.invest){
+      m.investYen = e.invest.yen; m.investMai = e.invest.mai;
+      if(e.invest.yen) parts.push(`投資 ${e.invest.yen.toLocaleString("ja-JP")}円`);
+      if(e.invest.mai) parts.push(`投資 ${e.invest.mai.toLocaleString("ja-JP")}枚`);
+    }
+    if(e.ret !== null){
+      m.retMai = e.ret;
+      if(e.ret) parts.push(`回収 ${e.ret.toLocaleString("ja-JP")}枚`);
+    }
+    lines.push({ name: m.name, parts, isNew: added.includes(e.name) });
+  });
+  return { added, lines };
+}
+
+function runTextInput(){
+  const ta = document.getElementById("textInput");
+  const out = document.getElementById("textResult");
+  const { entries, bad } = parseMemberText(ta.value, rate);
+
+  if(entries.length === 0){
+    out.innerHTML = `<div class="tr-err">名前・時刻・枚数が見つかりませんでした。</div>`;
+    return;
+  }
+  const { lines } = applyParsedEntries(entries);
+  checkedSet.clear();
+  render();
+
+  let html = lines.map(l =>
+    `<div class="tr-line"><b>${escapeHtml(l.name)}</b>${l.isNew ? `<span class="tr-new">新規追加</span>` : ""}` +
+    `<span>${l.parts.length ? l.parts.map(escapeHtml).join(" / ") : "変更なし"}</span></div>`
+  ).join("");
+  if(bad.length){
+    html += `<div class="tr-err">読み取れなかった行：${bad.map(escapeHtml).join(" ／ ")}</div>`;
+  }
+  out.innerHTML = html;
+  showToast(`${lines.length}人分を反映しました`);
+  if(bad.length === 0) ta.value = "";
+}
+
+function toggleTextPanel(force){
+  const panel = document.getElementById("textPanel");
+  const btn = document.getElementById("textToggleBtn");
+  const open = typeof force === "boolean" ? force : !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  btn.setAttribute("aria-expanded", open);
+  if(open) document.getElementById("textInput").focus();
+}
+
+function restoreDefaultMembers(){
+  const have = new Set(members.map(m => m.name));
+  const missing = DEFAULT_MEMBER_NAMES.filter(n => !have.has(n));
+  if(missing.length === 0){ showToast("初期メンバーは全員います"); return; }
+  missing.forEach(n => members.push(newMember(n)));
+  render();
+  showToast(`${missing.join("、")} を追加しました`);
+}
+
+document.getElementById("textToggleBtn").onclick = () => toggleTextPanel();
+document.getElementById("textApplyBtn").onclick = runTextInput;
+document.getElementById("textClearBtn").onclick = () => {
+  document.getElementById("textInput").value = "";
+  document.getElementById("textResult").innerHTML = "";
+};
+document.getElementById("textInput").addEventListener("keydown", e => {
+  if((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); runTextInput(); }
+});
+document.getElementById("restoreMembersBtn").onclick = restoreDefaultMembers;
+
 function addMember(){
   const inp = document.getElementById("newName");
   const name = inp.value.trim() || String.fromCharCode(65 + members.length);
-  members.push({ name, investYen:0, investMai:0, retMai:0, start:DEFAULT_START, end:nowHHMM() });
+  members.push(newMember(name));
   inp.value = "";
   render();
 }
@@ -820,7 +1075,6 @@ if(restored){
   document.getElementById("rate").value = rate.toFixed(2);
   if(rate > 0) document.getElementById("rateExch").value = Math.round(EXCH_BASE / rate);
 }else{
-  members.forEach(m => { if(!m.end) m.end = nowHHMM(); });
   rate = EXCH_BASE / 51;
   document.getElementById("rate").value = rate.toFixed(2);
   document.getElementById("rateExch").value = 51;
