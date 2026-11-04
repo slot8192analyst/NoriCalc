@@ -136,6 +136,30 @@ button.btn:hover{background:var(--accent);border-color:var(--accent);color:#000}
 .acc-body{max-height:0;opacity:0;padding:0 24px;overflow:hidden;transition:max-height .25s ease,opacity .2s ease,padding .25s ease}
 .accordion.open .acc-body{max-height:500px;opacity:1;padding:18px 24px 24px;border-top:1px solid var(--line)}
 
+/* ===== member tools / text input ===== */
+.member-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tool-btn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid var(--line2);color:var(--mute);font-family:var(--mono);font-size:12px;cursor:pointer;transition:color .15s,border-color .15s}
+.tool-btn:hover{color:var(--accent);border-color:var(--accent)}
+.tool-btn[aria-expanded="true"]{color:var(--accent);border-color:var(--accent)}
+.tool-btn[aria-expanded="true"] .chevron{transform:rotate(-135deg);margin-top:3px;border-color:var(--accent)}
+.text-panel{display:none;background:var(--bg2);border:1px solid var(--line);padding:14px 16px;margin-bottom:16px}
+.text-panel.open{display:block}
+textarea{
+  width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--fg);border-radius:0;
+  padding:10px 12px;font-family:var(--mono);font-size:14px;line-height:1.6;outline:none;resize:vertical;min-height:140px;
+  transition:border-color .15s;
+}
+textarea::placeholder{color:var(--dim)}
+textarea:focus{border-color:var(--accent)}
+.text-hint{font-size:12px;color:var(--mute);line-height:1.7;margin-top:8px}
+.text-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.text-result{margin-top:10px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.text-result:empty{display:none}
+.tr-line{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;font-family:var(--mono);font-size:12px;color:var(--mute)}
+.tr-line b{color:var(--fg);font-family:var(--jp);font-size:14px}
+.tr-new{color:#000;background:var(--accent);font-size:10px;padding:0 6px}
+.tr-err{color:var(--danger);font-size:12px;line-height:1.6}
+
 /* ===== toggle ===== */
 .toggle-row{display:flex;align-items:center;gap:12px}
 .mode-label{font-family:var(--mono);font-size:12px;color:var(--dim);transition:color .15s}
@@ -327,7 +351,7 @@ footer .mark{font-family:var(--disp);font-weight:900;font-size:clamp(48px,12vw,1
   .summary-pl{font-size:32px}
 
   /* iOS自動ズーム防止 */
-  input,select,.quick-rate input{font-size:16px}
+  input,select,textarea,.quick-rate input{font-size:16px}
   .quick-rate input{width:54px}
   .bulk-field{min-width:0;flex:1 1 100%}
   .member-add{max-width:none}

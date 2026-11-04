@@ -109,6 +109,27 @@
       </div>
     </div>
 
+    <!-- ツールバー：テキスト入力 / 初期メンバー再追加 -->
+    <div class="member-tools">
+      <button class="tool-btn" id="textToggleBtn" type="button" aria-expanded="false" aria-controls="textPanel">テキストで入力 <span class="chevron"></span></button>
+      <button class="tool-btn" id="restoreMembersBtn" type="button" title="消したメンバーを戻します（入力済みの内容はそのまま）">初期メンバーを再追加</button>
+    </div>
+
+    <div class="text-panel" id="textPanel">
+      <textarea id="textInput" rows="8" spellcheck="false" placeholder="坂井
+09:00-22:00
++3000枚
+中江
+09:00-18:00
+-2000枚"></textarea>
+      <div class="text-hint">名前の行のあとに「時刻」「+/-枚数」を書くと、その人の欄に入ります。<br>＋3000枚 → 回収(枚)／－2000枚 → 投資(枚)。「坂井 09:00-22:00 +3000枚」の1行形式、「投資 2000枚」「回収 3000枚」もOK。名前がカードに無い場合は新規追加します。</div>
+      <div class="text-actions">
+        <button class="btn modal-cancel" id="textClearBtn" type="button">クリア</button>
+        <button class="btn" id="textApplyBtn" type="button">入力欄に反映</button>
+      </div>
+      <div class="text-result" id="textResult" aria-live="polite"></div>
+    </div>
+
     <!-- 時刻の一括入力（時間ルール時のみ表示） -->
     <div class="bulk-time" id="bulkTime">
       <div class="bulk-row-top">
