@@ -165,40 +165,62 @@
     <div id="breakdown"></div>
   </section>
 
-  <!-- 結果＋引き出しまとめコピー用のバー -->
+  <!-- 画像コピー用のバー -->
   <div class="report-bar">
-    <span class="report-bar-label">結果・引き出しをまとめて</span>
-    <button class="btn report-copy-btn" data-copy="#reportGroup" data-copy-label="結果まとめ" type="button">
-      1枚にまとめてコピー
-    </button>
+    <span class="report-bar-label">画像でコピー</span>
+    <div class="report-btns">
+      <button class="btn report-copy-btn" data-copy="#inputReportSection" data-copy-label="入力内容" type="button">入力内容</button>
+      <button class="btn report-copy-btn" data-copy="#resultSection" data-copy-label="結果" type="button">結果</button>
+      <button class="btn report-copy-btn" data-copy="#prizeSection" data-copy-label="景品引き出し" type="button">景品引き出し</button>
+      <button class="btn report-copy-btn" data-copy="#reportGroup" data-copy-label="結果と景品引き出し" type="button">結果＋景品</button>
+      <button class="btn report-copy-btn all" data-copy="#reportAll" data-copy-label="入力内容・結果・景品引き出し" type="button">全部まとめて1枚</button>
+    </div>
   </div>
 
-  <!-- 1枚画像にするセクションのまとまり -->
-  <div class="report-group" id="reportGroup" data-copy-label="結果まとめ">
+  <!-- 1枚画像にするセクションのまとまり（入力内容＋結果＋景品） -->
+  <div class="report-group" id="reportAll" data-copy-label="入力内容・結果・景品引き出し">
 
-    <!-- 結果 -->
-    <section class="card" id="resultSection" data-copy-label="結果">
+    <!-- 入力内容（画像用の読み取り専用ビュー） -->
+    <section class="card" id="inputReportSection" data-copy-label="入力内容">
       <div class="label-row">
-        <div class="label">結果</div>
+        <div class="label">入力内容</div>
       </div>
-      <div class="summary" id="summary"></div>
-      <table id="resultTable">
+      <div class="rule-note" id="inputReportInfo"></div>
+      <table id="inputTable">
         <thead>
-          <tr><th>メンバー</th><th>個人損益</th><th>精算（過不足）</th><th>清算後の取り分</th></tr>
+          <tr><th>メンバー</th><th class="col-time">稼働時間</th><th>投資</th><th>回収</th><th>個人損益</th></tr>
         </thead>
-        <tbody id="resultBody"></tbody>
+        <tbody id="inputBody"></tbody>
       </table>
     </section>
 
-    <!-- 景品引き出し案内 -->
-    <section class="card" id="prizeSection" data-copy-label="景品引き出し">
-      <div class="label-row">
-        <div class="label">各メンバーの景品引き出し</div>
-      </div>
-      <div class="rule-note" id="prizeInfo"></div>
-      <div id="prizeWithdraw"></div>
-    </section>
+    <!-- 結果＋景品引き出し -->
+    <div class="report-group" id="reportGroup" data-copy-label="結果と景品引き出し">
 
+      <!-- 結果 -->
+      <section class="card" id="resultSection" data-copy-label="結果">
+        <div class="label-row">
+          <div class="label">結果</div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <table id="resultTable">
+          <thead>
+            <tr><th>メンバー</th><th>個人損益</th><th>精算（過不足）</th><th>清算後の取り分</th></tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </section>
+
+      <!-- 景品引き出し案内 -->
+      <section class="card" id="prizeSection" data-copy-label="景品引き出し">
+        <div class="label-row">
+          <div class="label">各メンバーの景品引き出し</div>
+        </div>
+        <div class="rule-note" id="prizeInfo"></div>
+        <div id="prizeWithdraw"></div>
+      </section>
+
+    </div>
   </div>
 </main>
 

@@ -410,9 +410,45 @@ function renderRuleNote(){
   renderRuleSummary();
 }
 
+// ===== 入力内容（画像用ビュー） =====
+function renderInputReport(){
+  const body = document.getElementById("inputBody");
+  const showHours = ruleUsesHours();
+  const ruleKey = document.getElementById("rule").value;
+  const exch = rate > 0 ? Math.round(EXCH_BASE / rate) : 0;
+  const d = new Date();
+  const stamp = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+  document.getElementById("inputReportInfo").textContent =
+    `${stamp}　交換率 ${exch}枚交換（${rate.toFixed(2)}円/枚）／ ルール：${RULE_LABELS[ruleKey] || ""}`;
+  document.getElementById("inputTable").classList.toggle("no-time", !showHours);
+
+  if(members.length === 0){
+    body.innerHTML = `<tr><td colspan="5" class="empty">メンバーを追加してください</td></tr>`;
+    return;
+  }
+  body.innerHTML = members.map(m => {
+    const pl = Math.round(retOf(m) - investOf(m));
+    const hrs = hoursOf(m);
+    const timeText = (m.start && m.end)
+      ? `${m.start}→${m.end}<small>${hrs > 0 ? hrs.toFixed(2) + "h" : "要確認"}</small>`
+      : "—";
+    const inv = [];
+    if(m.investYen) inv.push(`${m.investYen.toLocaleString("ja-JP")}円`);
+    if(m.investMai) inv.push(`${m.investMai.toLocaleString("ja-JP")}枚`);
+    return `<tr>
+      <td data-label="メンバー" class="r-name">${escapeHtml(m.name)}</td>
+      <td data-label="稼働時間" class="col-time">${timeText}</td>
+      <td data-label="投資">${inv.length ? inv.join(" + ") : "—"}</td>
+      <td data-label="回収">${m.retMai ? m.retMai.toLocaleString("ja-JP") + "枚" : "—"}</td>
+      <td data-label="個人損益" class="r-pl ${signClass(pl)}">${signYen(pl)}</td>
+    </tr>`;
+  }).join("");
+}
+
 // ===== 計算 =====
 function calc(){
   const rule = document.getElementById("rule").value;
+  renderInputReport();
   const n = members.length;
   const totalInvest = members.reduce((s,m)=>s+investOf(m),0);
   const totalRet    = members.reduce((s,m)=>s+retOf(m),0);
@@ -657,13 +693,13 @@ function showToast(msg){
 }
 
 // ===== セクションを画像化してコピー／保存 =====
-async function copySection(selector, label){
+async function copySection(selector, label, trigger){
   const el = document.querySelector(selector);
   if(!el || typeof html2canvas === "undefined"){
     showToast("画像化に失敗しました");
     return;
   }
-  const btn = el.querySelector(".copy-btn");
+  const btn = trigger || el.querySelector(".copy-btn");
   btn && btn.classList.add("busy");
   try{
     const canvas = await html2canvas(el, {
@@ -713,7 +749,7 @@ document.addEventListener("click", (e) => {
   const label = btn.dataset.copyLabel
     || (document.querySelector(selector)?.dataset.copyLabel)
     || "セクション";
-  copySection(selector, label);
+  copySection(selector, label, btn);
 });
 
 // ===== イベント =====

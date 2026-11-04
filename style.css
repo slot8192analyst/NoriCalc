@@ -315,7 +315,16 @@ td:first-child{font-family:var(--jp);font-weight:700}
 .report-group{display:flex;flex-direction:column;gap:20px}
 .report-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid var(--line);padding:12px 16px;background:var(--bg2)}
 .report-bar-label{font-family:var(--mono);font-size:11px;color:var(--mute)}
-.report-copy-btn{flex-shrink:0}
+.report-btns{display:flex;flex-wrap:wrap;gap:8px}
+.report-copy-btn{flex-shrink:0;height:38px;padding:0 14px}
+button.btn.report-copy-btn:not(.all){background:transparent;color:var(--fg);border-color:var(--line2)}
+button.btn.report-copy-btn:not(.all):hover{background:var(--accent);border-color:var(--accent);color:#000}
+button.btn.busy{opacity:.5;pointer-events:none}
+
+/* 入力内容テーブル（画像用） */
+#inputTable td small{display:block;color:var(--dim);font-size:10px;margin-top:2px}
+#inputTable.no-time .col-time{display:none}
+#inputTable td.r-pl{font-weight:700}
 
 /* ===== toast ===== */
 .toast{
@@ -380,6 +389,29 @@ footer .mark{font-family:var(--disp);font-weight:900;font-size:clamp(48px,12vw,1
   #resultTable td.r-settle .r-amt{display:inline-flex;align-items:baseline;text-align:right;white-space:nowrap}
   #resultTable td.r-settle .settle-tag{order:-1;margin-left:0;margin-right:6px}
   #resultTable td.r-share{grid-area:share;font-size:14px;font-weight:700}
+}
+
+@media (max-width:640px){
+  #inputTable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  #inputTable{margin-top:6px}
+  #inputTable tr{
+    display:grid;grid-template-columns:1fr 1fr;
+    grid-template-areas:"name pl" "time time" "inv ret";
+    gap:6px 10px;background:var(--bg2);border:1px solid var(--line);padding:14px 16px;margin-top:10px;
+  }
+  #inputTable.no-time tr{grid-template-areas:"name pl" "inv ret"}
+  #inputTable td{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:0;padding:0;font-size:14px}
+  #inputTable td::before{content:attr(data-label);color:var(--dim);font-family:var(--mono);font-size:10px}
+  #inputTable td small{display:inline;margin-left:8px}
+  #inputTable td:nth-child(1){grid-area:name;font-size:17px;font-weight:900}
+  #inputTable td:nth-child(1)::before{content:none}
+  #inputTable td:nth-child(2){grid-area:time}
+  #inputTable td:nth-child(3){grid-area:inv}
+  #inputTable td:nth-child(4){grid-area:ret}
+  #inputTable td:nth-child(5){grid-area:pl;align-items:flex-end;text-align:right}
+  #inputTable td:nth-child(5)::before{content:none}
+  .report-btns{width:100%}
+  .report-copy-btn{flex:1 1 calc(50% - 8px)}
 }
 
 @media (max-width:480px){
