@@ -4,16 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ノリ打ち計算ツール</title>
+<meta name="theme-color" content="#0a0a0b">
 <link rel="icon" href="NoriCalc.jpg">
 <link rel="apple-touch-icon" href="NoriCalc.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Archivo:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>ノリ打ち計算ツール</h1>
-    <p>投資/回収を入れて、配分ルールを選ぶだけ</p>
-  </header>
+<div class="gridbg"></div>
+
+<header class="hdr">
+  <div class="wrap">
+    <a href="#" class="logo"><i></i><span class="lt"><span>ノリ打ち<em>計算</em>ツール</span><small>NORIUCHI CALCULATOR</small></span></a>
+    <nav class="nav">
+      <a href="#rateCard" class="k"><b>01</b>RATE</a>
+      <a href="#memberSection"><b>02</b>MEMBERS</a>
+      <a href="#resultSection"><b>03</b>RESULT</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap app">
+  <p class="intro">投資/回収を入れて、配分ルールを選ぶだけ</p>
 
   <!-- 交換率設定（アコーディオン） -->
   <section class="card accordion" id="rateCard" data-copy-label="交換率">
@@ -165,7 +179,14 @@
     </section>
 
   </div>
-</div>
+</main>
+
+<footer>
+  <div class="mark">NORI CALC</div>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> ノリ打ち計算ツール</span>
+  </div>
+</footer>
 
 <!-- 個別時刻編集ポップアップ -->
 <div class="modal-overlay" id="timeModal" aria-hidden="true">
